@@ -60,3 +60,24 @@ One block per agent turn, one row per changed file:
 |---|---|---|---|
 | `backend/CLAUDE.md` | modified | +2 | -1 |
 | `docs/plano-execucao.md` | modified | +3 | -3 |
+
+---
+### Turn 2026-11-14 16:57:07 -0300 · ClaudeCode
+- **Source**: command
+- **Session**: n/a
+- **Prompt**: n/a
+- **Summary**: Diagnosed local env: IntelliJ Maven sync (JDK 25 -> 21, bundled Maven) and Docker/WSL not running for Testcontainers; no code changes
+
+| File | Change | Additions | Removals |
+|---|---|---|---|
+| `backend/.gitattributes` | created | +2 | -0 |
+| `backend/.gitignore` | created | +33 | -0 |
+| `backend/.mvn/wrapper/maven-wrapper.properties` | created | +3 | -0 |
+| `backend/mvnw` | created | +295 | -0 |
+| `backend/mvnw.cmd` | created | +189 | -0 |
+| `backend/pom.xml` | created | +114 | -0 |
+| `backend/src/main/java/com/kingspan/purchase/PurchaseApplication.java` | created | +13 | -0 |
+| `backend/src/main/resources/application.properties` | created | +1 | -0 |
+| `backend/src/test/java/com/kingspan/purchase/PurchaseApplicationTests.java` | created | +15 | -0 |
+| `backend/src/test/java/com/kingspan/purchase/TestPurchaseApplication.java` | created | +11 | -0 |
+| `backend/src/test/java/com/kingspan/purchase/TestcontainersConfiguration.java` | created | +18 | -0 |
