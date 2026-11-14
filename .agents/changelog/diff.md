@@ -177,3 +177,19 @@ One block per agent turn, one row per changed file:
 |---|---|---|---|
 | `backend/src/main/java/com/kingspan/purchase/request/domain/RequestStateMachine.java` | modified | +8 | -8 |
 | `backend/src/test/java/com/kingspan/purchase/request/domain/RequestStateMachineTest.java` | modified | +17 | -10 |
+
+---
+### Turn 2026-11-14 20:36:30 -0300 · ClaudeCode
+- **Source**: command
+- **Session**: 879061e4-dfe1-485c-9931-19fd82f6beb7
+- **Prompt**: Execute a etapa E7 do docs/plano-execucao.md. Inclua testes nos limites exatos (1000.00, 1000.01, 10000.00, 10000.01) e para SOFTWARE abaixo e acima de 10.000, garantindo que a etapa ADMIN nunca se repete.
+- **Summary**: E7: approval chain builder with pluggable ChainRule (ThresholdRule, SoftwareRequiresAdminRule) and boundary/SOFTWARE tests
+
+| File | Change | Additions | Removals |
+|---|---|---|---|
+| `backend/src/main/java/com/kingspan/purchase/request/domain/ApprovalChainBuilder.java` | created | +52 | -0 |
+| `backend/src/main/java/com/kingspan/purchase/request/domain/ChainRule.java` | created | +15 | -0 |
+| `backend/src/main/java/com/kingspan/purchase/request/domain/SoftwareRequiresAdminRule.java` | created | +19 | -0 |
+| `backend/src/main/java/com/kingspan/purchase/request/domain/StepLevel.java` | modified | +3 | -0 |
+| `backend/src/main/java/com/kingspan/purchase/request/domain/ThresholdRule.java` | created | +31 | -0 |
+| `backend/src/test/java/com/kingspan/purchase/request/domain/ApprovalChainBuilderTest.java` | created | +142 | -0 |
