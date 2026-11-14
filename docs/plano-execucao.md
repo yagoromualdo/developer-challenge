@@ -12,7 +12,7 @@ Legenda: 🧑 = feito pelo usuário, sem agente · 🤖 = executado com o Claude
 |---|---|---|---|
 | — | Stateful × stateless | Stateless (JWT); todo estado no Postgres | 007 |
 | — | Formato de erro | Problem Details (RFC 9457) com `code` | — |
-| D1 | Versões | Java 25, Spring Boot 4.1.2, Maven, `.properties` | — |
+| D1 | Versões | Java 21, Spring Boot 4.1.2, Maven, `.properties` | — |
 | D2 | Estilo | Hexagonal pragmático (núcleo de domínio puro) | 004 |
 | D3 | Pacotes | Por feature, com `domain/application/infra/web` | 004 |
 | D4 | Máquina de estados | Tabela de transições (enums + mapa) + guards | 004 |
@@ -75,7 +75,7 @@ Legenda: 🧑 = feito pelo usuário, sem agente · 🤖 = executado com o Claude
 ## Fase 1 — Fundação do back-end
 
 ### E2 🤖 Inicializar o projeto Spring Boot
-- Projeto do start.spring.io (Maven, Java 25, Boot 4.1.2, Web, Validation, Data JPA, PostgreSQL, Flyway, Actuator, Testcontainers) descompactado em `backend/`; adicionar springdoc 3.x, ArchUnit, JaCoCo e Spotless no `pom.xml`; `backend/.gitignore`; `application.properties` com placeholders de env; `ddl-auto=validate`.
+- Projeto do start.spring.io (Maven, Java 21, Boot 4.1.2, Web, Validation, Data JPA, PostgreSQL, Flyway, Actuator, Testcontainers) descompactado em `backend/`; adicionar springdoc 3.x, ArchUnit, JaCoCo e Spotless no `pom.xml`; `backend/.gitignore`; `application.properties` com placeholders de env; `ddl-auto=validate`.
 - **Pronto quando:** `./mvnw verify` verde (o teste de contexto sobe com Testcontainers).
 - **Commit:** `chore(backend): inicializa projeto Spring Boot 4.1`
 
@@ -201,7 +201,7 @@ Legenda: 🧑 = feito pelo usuário, sem agente · 🤖 = executado com o Claude
 - **Commit:** `build(backend): adiciona Dockerfile e serviço no compose`
 
 ### E24 🤖 CI do back-end
-- `.github/workflows/ci.yml` com o job `backend` (`setup-java` 25, cache, `./mvnw -B verify`).
+- `.github/workflows/ci.yml` com o job `backend` (`setup-java` 21 Temurin, cache, `./mvnw -B verify`).
 - **Pronto quando:** pipeline verde no GitHub.
 - **Commit:** `ci: adiciona pipeline do back-end`
 

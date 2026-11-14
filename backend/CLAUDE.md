@@ -35,7 +35,8 @@ O plano de execução está em `docs/plano-execucao.md`. Trabalhe **somente na e
 
 | Item | Versão / escolha |
 |---|---|
-| Java | 25 |
+| Java | 21 (LTS). Não use recursos de versões posteriores (ex.: `_` para variáveis não usadas, `import module`, construtores flexíveis) |
+| Imagens Docker | `maven:3-eclipse-temurin-21` (build) e `eclipse-temurin:21-jre` (runtime) |
 | Spring Boot | 4.1.2 (Spring Framework 7) |
 | Build | Maven (`./mvnw`) |
 | Banco | PostgreSQL 17 (mesma imagem no compose e no Testcontainers) |

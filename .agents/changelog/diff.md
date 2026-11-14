@@ -48,3 +48,15 @@ One block per agent turn, one row per changed file:
 | `backend/CLAUDE.md` | created | +192 | -0 |
 | `frontend/CLAUDE.md` | created | +137 | -0 |
 | `plano-execucao.md` | created | +291 | -0 |
+
+---
+### Turn 2026-11-14 16:36:51 -0300 · Other-ClaudeAI
+- **Source**: command
+- **Session**: n/a
+- **Prompt**: n/a
+- **Summary**: Switch Java version from 25 to 21 in plan and backend instructions
+
+| File | Change | Additions | Removals |
+|---|---|---|---|
+| `backend/CLAUDE.md` | modified | +2 | -1 |
+| `docs/plano-execucao.md` | modified | +3 | -3 |
