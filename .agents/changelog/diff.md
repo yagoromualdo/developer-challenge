@@ -152,3 +152,28 @@ One block per agent turn, one row per changed file:
 | `backend/src/test/java/com/kingspan/purchase/request/domain/MoneyTest.java` | created | +94 | -0 |
 | `backend/src/test/java/com/kingspan/purchase/request/domain/RequestStatusTest.java` | created | +15 | -0 |
 | `backend/src/test/java/com/kingspan/purchase/shared/domain/ActorTest.java` | created | +30 | -0 |
+
+---
+### Turn 2026-11-14 20:19:06 -0300 · ClaudeCode
+- **Source**: command
+- **Session**: 740603e4-670d-4397-b4e8-b405a5605466
+- **Prompt**: Execute a etapa E6 do docs/plano-execucao.md. Use @ParameterizedTest cobrindo todas as combinações status × ação da tabela 4.2 do README, válidas e inválidas, com mensagens de erro em pt-BR que expliquem o motivo.
+- **Summary**: E6: table-driven request state machine with parameterized tests covering all 36 status x action combinations
+
+| File | Change | Additions | Removals |
+|---|---|---|---|
+| `backend/src/main/java/com/kingspan/purchase/request/domain/RequestStateMachine.java` | created | +132 | -0 |
+| `backend/src/main/java/com/kingspan/purchase/request/domain/StepPosition.java` | created | +10 | -0 |
+| `backend/src/test/java/com/kingspan/purchase/request/domain/RequestStateMachineTest.java` | created | +147 | -0 |
+
+---
+### Turn 2026-11-14 20:26:11 -0300 · ClaudeCode
+- **Source**: command
+- **Session**: 740603e4-670d-4397-b4e8-b405a5605466
+- **Prompt**: <pasted_content id="2c7d"> Revise criticamente a implementação da etapa E6 do docs/plano-execucao.md (máquina de estados), comparando com a tabela 4.2 e a seção 4.3 do README.md. Verifique e corrija o que faltar: 1. Todas as transições válidas da tabela 4.2 existem (incluindo approve intermediário → PENDING_APPROVAL e approve da última etapa → APPROVED, e submit a partir de CHANGES_REQUESTED). 2. Cancel é permitido a partir de DRAFT, PENDING_APPROVAL e CHANGES_REQUESTED, e bloquea
+- **Summary**: E6 review: fix pt-BR phrasing of INVALID_TRANSITION messages and add isFinal/table consistency test
+
+| File | Change | Additions | Removals |
+|---|---|---|---|
+| `backend/src/main/java/com/kingspan/purchase/request/domain/RequestStateMachine.java` | modified | +8 | -8 |
+| `backend/src/test/java/com/kingspan/purchase/request/domain/RequestStateMachineTest.java` | modified | +17 | -10 |
