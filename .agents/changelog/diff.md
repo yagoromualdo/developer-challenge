@@ -109,3 +109,25 @@ One block per agent turn, one row per changed file:
 |---|---|---|---|
 | `.env.example` | created | +16 | -0 |
 | `docker-compose.yml` | created | +26 | -0 |
+
+---
+### Turn 2026-11-14 19:40:14 -0300 · ClaudeCode
+- **Source**: command
+- **Session**: f4a4b604-9e6c-4991-96a0-0e29276a13db
+- **Prompt**: Execute a etapa E4 do docs/plano-execucao.md. Atenção: o health precisa responder exatamente em /health (base-path do Actuator na raiz, expondo apenas health) e o RequestIdFilter deve rodar antes de qualquer outro filtro.
+- **Summary**: E4: request id filter (first in chain) with MDC, ECS logs, Problem Details exception handler, BusinessRuleException and error codes, /health at root, OpenAPI config, Clock bean, integration tests
+
+| File | Change | Additions | Removals |
+|---|---|---|---|
+| `backend/src/main/java/com/kingspan/purchase/shared/config/ClockConfig.java` | created | +15 | -0 |
+| `backend/src/main/java/com/kingspan/purchase/shared/config/OpenApiConfig.java` | created | +20 | -0 |
+| `backend/src/main/java/com/kingspan/purchase/shared/config/WebConfig.java` | created | +25 | -0 |
+| `backend/src/main/java/com/kingspan/purchase/shared/error/BusinessRuleException.java` | created | +16 | -0 |
+| `backend/src/main/java/com/kingspan/purchase/shared/error/ErrorCode.java` | created | +41 | -0 |
+| `backend/src/main/java/com/kingspan/purchase/shared/error/FieldViolation.java` | created | +4 | -0 |
+| `backend/src/main/java/com/kingspan/purchase/shared/error/GlobalExceptionHandler.java` | created | +163 | -0 |
+| `backend/src/main/java/com/kingspan/purchase/shared/web/RequestId.java` | created | +17 | -0 |
+| `backend/src/main/java/com/kingspan/purchase/shared/web/RequestIdFilter.java` | created | +61 | -0 |
+| `backend/src/main/resources/application.properties` | modified | +13 | -0 |
+| `backend/src/test/java/com/kingspan/purchase/TestcontainersConfiguration.java` | modified | +1 | -1 |
+| `backend/src/test/java/com/kingspan/purchase/shared/SharedInfrastructureIntegrationTest.java` | created | +225 | -0 |
