@@ -97,3 +97,15 @@ One block per agent turn, one row per changed file:
 | `backend/src/test/java/com/kingspan/purchase/PurchaseApplicationTests.java` | modified | +2 | -4 |
 | `backend/src/test/java/com/kingspan/purchase/TestPurchaseApplication.java` | modified | +5 | -4 |
 | `backend/src/test/java/com/kingspan/purchase/TestcontainersConfiguration.java` | modified | +5 | -6 |
+
+---
+### Turn 2026-11-14 19:17:44 -0300 · ClaudeCode
+- **Source**: command
+- **Session**: d965f471-5870-4413-a055-8d929a6f2019
+- **Prompt**: Execute a etapa E3 do docs/plano-execucao.md. Crie o docker-compose.yml na raiz só com o serviço db (Postgres 17, healthcheck pg_isready, porta 5433 no host) e o .env.example. Ainda não adicione os serviços backend nem frontend. Garanta que o application.properties tenha defaults que conectem nesse banco ao rodar localmente.
+- **Summary**: Add docker-compose.yml with Postgres 17 db service (healthcheck, host port 5433) and .env.example (E3)
+
+| File | Change | Additions | Removals |
+|---|---|---|---|
+| `.env.example` | created | +16 | -0 |
+| `docker-compose.yml` | created | +26 | -0 |

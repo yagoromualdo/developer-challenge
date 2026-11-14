@@ -1,0 +1,26 @@
+name: purchase
+
+services:
+  db:
+    image: postgres:17-alpine
+    restart: unless-stopped
+    environment:
+      # Defaults exclusivamente de desenvolvimento; sobrescreva via .env
+      POSTGRES_DB: ${POSTGRES_DB:-purchase}
+      POSTGRES_USER: ${POSTGRES_USER:-purchase}
+      POSTGRES_PASSWORD: ${POSTGRES_PASSWORD:-purchase}
+      TZ: UTC
+      PGTZ: UTC
+    ports:
+      - "${DB_HOST_PORT:-5433}:5432"
+    volumes:
+      - db-data:/var/lib/postgresql/data
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U $${POSTGRES_USER} -d $${POSTGRES_DB}"]
+      interval: 5s
+      timeout: 5s
+      retries: 10
+      start_period: 10s
+
+volumes:
+  db-data:
