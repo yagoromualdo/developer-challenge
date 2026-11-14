@@ -131,3 +131,24 @@ One block per agent turn, one row per changed file:
 | `backend/src/main/resources/application.properties` | modified | +13 | -0 |
 | `backend/src/test/java/com/kingspan/purchase/TestcontainersConfiguration.java` | modified | +1 | -1 |
 | `backend/src/test/java/com/kingspan/purchase/shared/SharedInfrastructureIntegrationTest.java` | created | +225 | -0 |
+
+---
+### Turn 2026-11-14 20:01:35 -0300 · ClaudeCode
+- **Source**: command
+- **Session**: b5f295ac-a6b5-434a-b75e-102139dbdf49
+- **Prompt**: Execute a etapa E5 do docs/plano-execucao.md. Lembre: o pacote domain não pode importar nada de Spring nem de jakarta.persistence.
+- **Summary**: E5: add pure domain value objects and enums (Money, RequestStatus, RequestAction, Category, StepLevel, Role, ApproverLevel, Actor) with unit tests
+
+| File | Change | Additions | Removals |
+|---|---|---|---|
+| `backend/src/main/java/com/kingspan/purchase/request/domain/Category.java` | created | +11 | -0 |
+| `backend/src/main/java/com/kingspan/purchase/request/domain/Money.java` | created | +73 | -0 |
+| `backend/src/main/java/com/kingspan/purchase/request/domain/RequestAction.java` | created | +14 | -0 |
+| `backend/src/main/java/com/kingspan/purchase/request/domain/RequestStatus.java` | created | +16 | -0 |
+| `backend/src/main/java/com/kingspan/purchase/request/domain/StepLevel.java` | created | +12 | -0 |
+| `backend/src/main/java/com/kingspan/purchase/shared/domain/Actor.java` | created | +29 | -0 |
+| `backend/src/main/java/com/kingspan/purchase/shared/domain/ApproverLevel.java` | created | +7 | -0 |
+| `backend/src/main/java/com/kingspan/purchase/shared/domain/Role.java` | created | +8 | -0 |
+| `backend/src/test/java/com/kingspan/purchase/request/domain/MoneyTest.java` | created | +94 | -0 |
+| `backend/src/test/java/com/kingspan/purchase/request/domain/RequestStatusTest.java` | created | +15 | -0 |
+| `backend/src/test/java/com/kingspan/purchase/shared/domain/ActorTest.java` | created | +30 | -0 |
