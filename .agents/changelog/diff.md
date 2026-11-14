@@ -81,3 +81,19 @@ One block per agent turn, one row per changed file:
 | `backend/src/test/java/com/kingspan/purchase/PurchaseApplicationTests.java` | created | +15 | -0 |
 | `backend/src/test/java/com/kingspan/purchase/TestPurchaseApplication.java` | created | +11 | -0 |
 | `backend/src/test/java/com/kingspan/purchase/TestcontainersConfiguration.java` | created | +18 | -0 |
+
+---
+### Turn 2026-11-14 18:56:45 -0300 · ClaudeCode
+- **Source**: command
+- **Session**: b474da71-26ef-4746-ba12-a885a982828e
+- **Prompt**: Execute a etapa E2 do docs/plano-execucao.md. O esqueleto do Initializr já está commitado (Java 21, Spring Boot 4.1.2, com as 7 dependências). Faça só o restante: springdoc-openapi 3.x, ArchUnit, JaCoCo, Spotless e o application.properties com variáveis de ambiente.
+- **Summary**: E2: add springdoc 3.2, ArchUnit, JaCoCo and Spotless to backend pom; env-based application.properties; Testcontainers on postgres:17; apply formatting
+
+| File | Change | Additions | Removals |
+|---|---|---|---|
+| `backend/pom.xml` | modified | +61 | -0 |
+| `backend/src/main/java/com/kingspan/purchase/PurchaseApplication.java` | modified | +3 | -4 |
+| `backend/src/main/resources/application.properties` | modified | +15 | -0 |
+| `backend/src/test/java/com/kingspan/purchase/PurchaseApplicationTests.java` | modified | +2 | -4 |
+| `backend/src/test/java/com/kingspan/purchase/TestPurchaseApplication.java` | modified | +5 | -4 |
+| `backend/src/test/java/com/kingspan/purchase/TestcontainersConfiguration.java` | modified | +5 | -6 |
