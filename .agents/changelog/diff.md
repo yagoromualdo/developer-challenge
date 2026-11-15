@@ -452,3 +452,24 @@ One block per agent turn, one row per changed file:
 | `backend/src/test/java/com/kingspan/purchase/request/web/PurchaseRequestIntegrationTest.java` | created | +438 | -0 |
 | `backend/src/test/java/com/kingspan/purchase/shared/config/ValidationConfigTest.java` | created | +41 | -0 |
 | `docs/adr/003-visibilidade-404-e-ordem-de-verificacao.md` | created | +27 | -0 |
+
+---
+### Turn 2026-11-15 14:42:31 -0300 · ClaudeCode
+- **Source**: command
+- **Session**: 93e8387e-957d-41a0-a0db-88e44c1afe65
+- **Prompt**: Execute a etapa E14 do docs/plano-execucao.md. Inclua o teste de duas requisições simultâneas com a mesma Idempotency-Key resultando em uma única solicitação.
+- **Summary**: E14: Idempotency-Key on POST /requests with payload hash, 24h replay, 409 on reuse and UNIQUE race handling, plus integration and concurrency tests
+
+| File | Change | Additions | Removals |
+|---|---|---|---|
+| `backend/src/main/java/com/kingspan/purchase/request/application/IdempotencyService.java` | created | +105 | -0 |
+| `backend/src/main/java/com/kingspan/purchase/request/application/IdempotentResponse.java` | created | +15 | -0 |
+| `backend/src/main/java/com/kingspan/purchase/request/infra/IdempotencyKeyRepository.java` | modified | +11 | -0 |
+| `backend/src/main/java/com/kingspan/purchase/request/web/CreatePurchaseRequestRequest.java` | modified | +30 | -0 |
+| `backend/src/main/java/com/kingspan/purchase/request/web/PurchaseRequestController.java` | modified | +43 | -5 |
+| `backend/src/main/java/com/kingspan/purchase/shared/error/ConflictException.java` | created | +16 | -0 |
+| `backend/src/main/java/com/kingspan/purchase/shared/error/ErrorCode.java` | modified | +1 | -0 |
+| `backend/src/main/java/com/kingspan/purchase/shared/error/GlobalExceptionHandler.java` | modified | +18 | -1 |
+| `backend/src/test/java/com/kingspan/purchase/request/application/IdempotencyServiceIntegrationTest.java` | created | +133 | -0 |
+| `backend/src/test/java/com/kingspan/purchase/request/web/PurchaseRequestIdempotencyIntegrationTest.java` | created | +273 | -0 |
+| `backend/src/test/java/com/kingspan/purchase/support/ApiClient.java` | modified | +10 | -5 |

@@ -16,6 +16,7 @@ public enum ErrorCode {
     UNSUPPORTED_MEDIA_TYPE,
     // 409
     CONCURRENT_MODIFICATION,
+    IDEMPOTENCY_KEY_REUSED,
     // 422 — regras de negócio
     INVALID_TRANSITION,
     SELF_APPROVAL_FORBIDDEN,

@@ -23,26 +23,31 @@ public final class ApiClient {
     }
 
     public Response get(String path, String token) {
-        return send(HttpMethod.GET, path, token, null);
+        return send(HttpMethod.GET, path, token, null, Map.of());
     }
 
     public Response post(String path, String token, String body) {
-        return send(HttpMethod.POST, path, token, body);
+        return send(HttpMethod.POST, path, token, body, Map.of());
+    }
+
+    public Response post(String path, String token, String body, Map<String, String> extraHeaders) {
+        return send(HttpMethod.POST, path, token, body, extraHeaders);
     }
 
     public Response put(String path, String token, String body) {
-        return send(HttpMethod.PUT, path, token, body);
+        return send(HttpMethod.PUT, path, token, body, Map.of());
     }
 
     public Response patch(String path, String token, String body) {
-        return send(HttpMethod.PATCH, path, token, body);
+        return send(HttpMethod.PATCH, path, token, body, Map.of());
     }
 
-    private Response send(HttpMethod method, String path, String token, String body) {
+    private Response send(HttpMethod method, String path, String token, String body, Map<String, String> extraHeaders) {
         RestClient.RequestBodySpec spec = client.method(method).uri(path).headers(headers -> {
             if (token != null) {
                 headers.setBearerAuth(token);
             }
+            extraHeaders.forEach(headers::set);
         });
         if (body != null) {
             spec.contentType(MediaType.APPLICATION_JSON).body(body);

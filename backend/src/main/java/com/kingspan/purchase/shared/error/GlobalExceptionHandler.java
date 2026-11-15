@@ -10,6 +10,7 @@ import org.jspecify.annotations.Nullable;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.beans.TypeMismatchException;
+import org.springframework.core.MethodParameter;
 import org.springframework.dao.OptimisticLockingFailureException;
 import org.springframework.http.HttpHeaders;
 import org.springframework.http.HttpStatus;
@@ -25,6 +26,7 @@ import org.springframework.validation.method.ParameterErrors;
 import org.springframework.validation.method.ParameterValidationResult;
 import org.springframework.web.bind.MethodArgumentNotValidException;
 import org.springframework.web.bind.annotation.ExceptionHandler;
+import org.springframework.web.bind.annotation.RequestHeader;
 import org.springframework.web.bind.annotation.RestControllerAdvice;
 import org.springframework.web.context.request.ServletWebRequest;
 import org.springframework.web.context.request.WebRequest;
@@ -64,6 +66,12 @@ public class GlobalExceptionHandler extends ResponseEntityExceptionHandler {
                 "Conflito de concorrência",
                 "O recurso foi alterado por outra operação. Recarregue os dados e tente novamente.",
                 ErrorCode.CONCURRENT_MODIFICATION);
+        return handleExceptionInternal(ex, problem, new HttpHeaders(), HttpStatus.CONFLICT, request);
+    }
+
+    @ExceptionHandler(ConflictException.class)
+    ResponseEntity<Object> handleConflict(ConflictException ex, WebRequest request) {
+        ProblemDetail problem = problem(HttpStatus.CONFLICT, "Conflito", ex.getMessage(), ex.code());
         return handleExceptionInternal(ex, problem, new HttpHeaders(), HttpStatus.CONFLICT, request);
     }
 
@@ -129,7 +137,7 @@ public class GlobalExceptionHandler extends ResponseEntityExceptionHandler {
             if (result instanceof ParameterErrors errors) {
                 errors.getFieldErrors().forEach(error -> violations.add(toViolation(error)));
             } else {
-                String parameter = result.getMethodParameter().getParameterName();
+                String parameter = parameterName(result.getMethodParameter());
                 result.getResolvableErrors()
                         .forEach(error -> violations.add(new FieldViolation(parameter, error.getDefaultMessage())));
             }
@@ -217,6 +225,15 @@ public class GlobalExceptionHandler extends ResponseEntityExceptionHandler {
         Map<String, Object> properties = problem.getProperties();
         Object code = properties == null ? null : properties.get("code");
         return code == null ? ErrorCode.fromStatus(problem.getStatus()) : ErrorCode.valueOf(code.toString());
+    }
+
+    // Para headers, o cliente conhece o nome do header (ex.: Idempotency-Key), e não o do parâmetro Java.
+    private static String parameterName(MethodParameter parameter) {
+        RequestHeader header = parameter.getParameterAnnotation(RequestHeader.class);
+        if (header != null && !header.name().isBlank()) {
+            return header.name();
+        }
+        return parameter.getParameterName();
     }
 
     private static FieldViolation toViolation(FieldError error) {

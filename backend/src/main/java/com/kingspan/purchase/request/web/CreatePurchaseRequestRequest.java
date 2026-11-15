@@ -42,4 +42,34 @@ record CreatePurchaseRequestRequest(
                 neededBy,
                 items.stream().map(RequestItemPayload::toDomain).toList());
     }
+
+    /**
+     * Forma normalizada usada no hash da {@code Idempotency-Key}: ordem dos campos, espaços, campos desconhecidos
+     * (como {@code total}) e a grafia do preço ({@code 89.9}, {@code "89.90"}) não mudam o resultado.
+     */
+    Fingerprint fingerprint() {
+        return new Fingerprint(
+                costCenterId,
+                title,
+                description,
+                category,
+                neededBy,
+                items.stream()
+                        .map(item -> new Fingerprint.Item(
+                                item.description(),
+                                item.quantity(),
+                                item.toDomain().unitPrice().toString()))
+                        .toList());
+    }
+
+    record Fingerprint(
+            Long costCenterId,
+            String title,
+            String description,
+            Category category,
+            LocalDate neededBy,
+            List<Item> items) {
+
+        record Item(String description, int quantity, String unitPrice) {}
+    }
 }
