@@ -26,6 +26,50 @@ class RequestSnapshotTest {
     }
 
     @Test
+    void etapaAtualDeveSerIntermediariaQuandoHaEtapasDepoisDela() {
+        var snapshot = new RequestSnapshot(
+                1L,
+                10L,
+                RequestStatus.PENDING_APPROVAL,
+                List.of(
+                        ApprovalStep.approvedBy(StepLevel.NIVEL_1, 2L),
+                        ApprovalStep.pending(StepLevel.NIVEL_2),
+                        ApprovalStep.pending(StepLevel.ADMIN)));
+
+        assertThat(snapshot.currentStepIndex()).isEqualTo(1);
+        assertThat(snapshot.currentStepPosition()).isEqualTo(StepPosition.INTERMEDIATE);
+    }
+
+    @Test
+    void etapaAtualDeveSerAUltimaQuandoNaoHaEtapasDepoisDela() {
+        var snapshot = new RequestSnapshot(
+                1L,
+                10L,
+                RequestStatus.PENDING_APPROVAL,
+                List.of(ApprovalStep.approvedBy(StepLevel.NIVEL_1, 2L), ApprovalStep.pending(StepLevel.NIVEL_2)));
+
+        assertThat(snapshot.currentStepIndex()).isEqualTo(1);
+        assertThat(snapshot.currentStepPosition()).isEqualTo(StepPosition.LAST);
+    }
+
+    @Test
+    void etapaUnicaPendenteDeveSerAUltima() {
+        var snapshot = new RequestSnapshot(
+                1L, 10L, RequestStatus.PENDING_APPROVAL, List.of(ApprovalStep.pending(StepLevel.NIVEL_1)));
+
+        assertThat(snapshot.currentStepIndex()).isZero();
+        assertThat(snapshot.currentStepPosition()).isEqualTo(StepPosition.LAST);
+    }
+
+    @Test
+    void posicaoDaEtapaAtualDeveFalharSemEtapaPendente() {
+        var snapshot = new RequestSnapshot(
+                1L, 10L, RequestStatus.APPROVED, List.of(ApprovalStep.approvedBy(StepLevel.NIVEL_1, 2L)));
+
+        assertThatThrownBy(snapshot::currentStepPosition).isInstanceOf(IllegalStateException.class);
+    }
+
+    @Test
     void naoDeveHaverEtapaAtualSemEtapas() {
         assertThat(new RequestSnapshot(1L, 10L, RequestStatus.DRAFT, List.of()).currentStep())
                 .isEmpty();

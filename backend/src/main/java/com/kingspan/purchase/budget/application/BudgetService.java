@@ -8,7 +8,10 @@ import com.kingspan.purchase.shared.error.ErrorCode;
 import com.kingspan.purchase.shared.error.ResourceNotFoundException;
 import java.math.BigDecimal;
 import java.math.RoundingMode;
+import java.text.DecimalFormat;
+import java.text.DecimalFormatSymbols;
 import java.time.YearMonth;
+import java.util.Locale;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.stereotype.Service;
@@ -19,6 +22,7 @@ public class BudgetService {
 
     private static final Logger log = LoggerFactory.getLogger(BudgetService.class);
     private static final BigDecimal ZERO = BigDecimal.ZERO.setScale(2);
+    private static final Locale PT_BR = Locale.of("pt", "BR");
 
     private final BudgetRepository budgets;
     private final CostCenterService costCenters;
@@ -55,6 +59,32 @@ public class BudgetService {
                 defined.amount(),
                 defined.consumed());
         return defined;
+    }
+
+    /**
+     * Consome {@code value} do mês de competência pelo UPDATE condicional (ADR 001); sem saldo, lança o 422
+     * {@code BUDGET_EXCEEDED} e a transação do chamador é desfeita.
+     */
+    @Transactional
+    public void consume(Long costCenterId, YearMonth month, BigDecimal value) {
+        if (budgets.consume(costCenterId, month, value) == 0) {
+            throw budgetExceeded(costCenterId, month, value);
+        }
+        log.info("Orçamento consumido: centro de custo {}, mês {}, valor {}", costCenterId, month, value);
+    }
+
+    // O saldo lido aqui é só informativo: quem decidiu que não cabia foi o UPDATE condicional.
+    private BusinessRuleException budgetExceeded(Long costCenterId, YearMonth month, BigDecimal required) {
+        BigDecimal available = find(costCenterId, month).available();
+        return new BusinessRuleException(
+                ErrorCode.BUDGET_EXCEEDED,
+                "O centro de custo " + costCenters.codeOf(costCenterId) + " tem " + brl(available) + " disponíveis em "
+                        + month + "; a solicitação exige " + brl(required) + ".");
+    }
+
+    private static String brl(BigDecimal value) {
+        DecimalFormat format = new DecimalFormat("#,##0.00", DecimalFormatSymbols.getInstance(PT_BR));
+        return "R$ " + format.format(value);
     }
 
     private BudgetView find(Long costCenterId, YearMonth month) {

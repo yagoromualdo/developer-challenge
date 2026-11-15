@@ -1,5 +1,6 @@
 package com.kingspan.purchase.request.web;
 
+import com.kingspan.purchase.request.application.ApprovalService;
 import com.kingspan.purchase.request.application.IdempotencyService;
 import com.kingspan.purchase.request.application.IdempotentResponse;
 import com.kingspan.purchase.request.application.PurchaseRequestService;
@@ -40,11 +41,17 @@ class PurchaseRequestController {
     static final int MAX_PAGE_SIZE = 100;
 
     private final PurchaseRequestService requestService;
+    private final ApprovalService approvalService;
     private final IdempotencyService idempotency;
     private final JsonMapper json;
 
-    PurchaseRequestController(PurchaseRequestService requestService, IdempotencyService idempotency, JsonMapper json) {
+    PurchaseRequestController(
+            PurchaseRequestService requestService,
+            ApprovalService approvalService,
+            IdempotencyService idempotency,
+            JsonMapper json) {
         this.requestService = requestService;
+        this.approvalService = approvalService;
         this.idempotency = idempotency;
         this.json = json;
     }
@@ -109,6 +116,27 @@ class PurchaseRequestController {
     PurchaseRequestResponse cancel(
             Actor actor, @PathVariable Long id, @Valid @RequestBody CancelPurchaseRequestRequest request) {
         return PurchaseRequestResponse.from(requestService.cancel(actor, id, request.lockVersion(), request.comment()));
+    }
+
+    @PostMapping("/{id}/approve")
+    PurchaseRequestResponse approve(
+            Actor actor, @PathVariable Long id, @Valid @RequestBody StepDecisionRequest request) {
+        return PurchaseRequestResponse.from(
+                approvalService.approve(actor, id, request.lockVersion(), request.comment()));
+    }
+
+    @PostMapping("/{id}/reject")
+    PurchaseRequestResponse reject(
+            Actor actor, @PathVariable Long id, @Valid @RequestBody StepDecisionRequest request) {
+        return PurchaseRequestResponse.from(
+                approvalService.reject(actor, id, request.lockVersion(), request.comment()));
+    }
+
+    @PostMapping("/{id}/request-changes")
+    PurchaseRequestResponse requestChanges(
+            Actor actor, @PathVariable Long id, @Valid @RequestBody StepDecisionRequest request) {
+        return PurchaseRequestResponse.from(
+                approvalService.requestChanges(actor, id, request.lockVersion(), request.comment()));
     }
 
     private PurchaseRequestResponse createNow(Actor actor, CreatePurchaseRequestRequest request) {

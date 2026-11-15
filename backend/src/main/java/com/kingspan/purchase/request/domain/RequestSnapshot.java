@@ -3,6 +3,7 @@ package com.kingspan.purchase.request.domain;
 import java.util.List;
 import java.util.Objects;
 import java.util.Optional;
+import java.util.stream.IntStream;
 
 /** {@code steps} traz só a versão atual, em ordem; por isso aprovações da v1 não contam na v2. */
 public record RequestSnapshot(Long ownerId, Long costCenterId, RequestStatus status, List<ApprovalStep> steps) {
@@ -20,6 +21,19 @@ public record RequestSnapshot(Long ownerId, Long costCenterId, RequestStatus sta
 
     public Optional<ApprovalStep> currentStep() {
         return steps.stream().filter(ApprovalStep::isPending).findFirst();
+    }
+
+    /** Posição da etapa atual em {@code steps}, para localizar a etapa persistida correspondente. */
+    public int currentStepIndex() {
+        return IntStream.range(0, steps.size())
+                .filter(index -> steps.get(index).isPending())
+                .findFirst()
+                .orElseThrow(() -> new IllegalStateException("Solicitação em " + status + " sem etapa pendente"));
+    }
+
+    // As etapas são decididas em ordem: a etapa atual é a última quando não existe nenhuma depois dela.
+    public StepPosition currentStepPosition() {
+        return currentStepIndex() == steps.size() - 1 ? StepPosition.LAST : StepPosition.INTERMEDIATE;
     }
 
     public Optional<ApprovalStep> stepApprovedBy(Long userId) {

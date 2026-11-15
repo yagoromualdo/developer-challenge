@@ -30,6 +30,14 @@ public class CostCenterService {
     }
 
     @Transactional(readOnly = true)
+    public String codeOf(Long costCenterId) {
+        return costCenters
+                .findById(costCenterId)
+                .map(CostCenterEntity::getCode)
+                .orElseThrow(() -> new IllegalStateException("Centro de custo " + costCenterId + " não existe"));
+    }
+
+    @Transactional(readOnly = true)
     public List<CostCenterView> list() {
         return costCenters.findAll(Sort.by("code")).stream()
                 .map(CostCenterView::from)
