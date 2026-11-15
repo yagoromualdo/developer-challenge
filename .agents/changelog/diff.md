@@ -559,3 +559,28 @@ One block per agent turn, one row per changed file:
 | `backend/src/main/java/com/kingspan/purchase/request/web/RequestVersionSummaryResponse.java` | created | +29 | -0 |
 | `backend/src/test/java/com/kingspan/purchase/request/infra/PurchaseRequestPersistenceIntegrationTest.java` | modified | +31 | -0 |
 | `backend/src/test/java/com/kingspan/purchase/request/web/RequestVersioningIntegrationTest.java` | created | +395 | -0 |
+
+---
+### Turn 2026-11-15 16:31:54 -0300 · ClaudeCode
+- **Source**: command
+- **Session**: 03e6c9c3-1c2c-47df-95e7-911fdb28b72f
+- **Prompt**: Execute a etapa E19 do docs/plano-execucao.md. Os testes de integração não podem usar @Transactional; use ExecutorService + CountDownLatch como largada e @RepeatedTest.
+- **Summary**: E19: add concurrency integration tests (same-step race, shared budget) and fix 500 by loading request, current version and steps in one query
+
+| File | Change | Additions | Removals |
+|---|---|---|---|
+| `backend/src/main/java/com/kingspan/purchase/request/application/RequestActionGuard.java` | modified | +2 | -0 |
+| `backend/src/main/java/com/kingspan/purchase/request/infra/PurchaseRequestRepository.java` | modified | +13 | -0 |
+| `backend/src/test/java/com/kingspan/purchase/request/web/ApprovalConcurrencyIntegrationTest.java` | created | +247 | -0 |
+
+---
+### Turn 2026-11-15 16:53:22 -0300 · ClaudeCode
+- **Source**: command
+- **Session**: 03e6c9c3-1c2c-47df-95e7-911fdb28b72f
+- **Prompt**: <pasted_content id="dc7a"> Aplique a opção 1. Garanta que: 1. Essa consulta única é a primeira leitura da solicitação na transação (se a entidade já estiver no contexto de persistência, o Hibernate devolve a instância em cache e a foto volta a ficar inconsistente). 2. O GET de detalhe usa a mesma consulta. 3. Rode o teste de concorrência com @RepeatedTest(50) uma vez localmente para confirmar que não há mais 500, depois volte para o número original. Sugira dois commits separados: 
+- **Summary**: E19 follow-up: document first-read contract in RequestActionGuard, stress-run concurrency tests at 50 repetitions, note ADR 001 point in plan
+
+| File | Change | Additions | Removals |
+|---|---|---|---|
+| `backend/src/main/java/com/kingspan/purchase/request/application/RequestActionGuard.java` | modified | +5 | -1 |
+| `docs/plano-execucao.md` | modified | +1 | -0 |
