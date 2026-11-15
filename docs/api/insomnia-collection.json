@@ -10,7 +10,7 @@
       "parentId": null,
       "name": "Purchase API — testes manuais",
       "scope": "collection",
-      "description": "Testes manuais da API de solicitações de compra (até a E11).\n\n## Preparação (uma vez)\n\n1. Suba o banco e o back-end:\n   - `docker compose up -d db`\n   - `cd backend && ./mvnw spring-boot:run`\n2. Crie um centro de custo (ainda não há `POST /cost-centers`; vem na E12):\n   ```\n   docker compose exec db psql -U purchase -d purchase -c \"INSERT INTO cost_center (code, name, created_at) VALUES ('CC-TI-01', 'Tecnologia', now()) RETURNING id;\"\n   ```\n   Se o id devolvido não for 1, ajuste `cost_center_id` no ambiente.\n3. Rode a pasta **02 Cadastro** de cima para baixo (cria Maria, João, Admin e Aprovador).\n4. Promova Admin e Aprovador (não existe endpoint de admin ainda):\n   ```\n   docker compose exec db psql -U purchase -d purchase -c \"UPDATE app_user SET role = 'ADMIN', cost_center_id = NULL WHERE email = 'admin@example.com'; UPDATE app_user SET role = 'APROVADOR', approver_level = 'NIVEL_2' WHERE email = 'aprovador@example.com';\"\n   ```\n5. Rode os logins da pasta **03 Login**. Um script pós-resposta (aba Scripts de cada login) grava o token em `token_maria`, `token_admin` ou `token_aprovador` no Base Environment. Como o token dura 15 min, refaça o login quando aparecer 401 inesperado.\n\nPara recomeçar do zero: `docker compose down -v` apaga o volume do banco.\n\n## Ambientes\n\n- **Local (back direto):** `base_url` = http://localhost:8080 (`./mvnw spring-boot:run`).\n- **Compose (via proxy do front):** `base_url` = http://localhost:4200/api, depois que o compose completo existir.\n\nNenhum token fica salvo no arquivo: os `token_*` começam vazios e são preenchidos pelos logins."
+      "description": "Testes manuais da API de solicitações de compra (até a E12).\n\n## Preparação (uma vez)\n\n1. Suba o banco e o back-end:\n   - `docker compose up -d db`\n   - `cd backend && ./mvnw spring-boot:run`\n2. Crie o primeiro centro de custo (o `POST /cost-centers` exige um ADMIN, e até o seed da E22 não existe nenhum):\n   ```\n   docker compose exec db psql -U purchase -d purchase -c \"INSERT INTO cost_center (code, name, created_at) VALUES ('CC-TI-01', 'Tecnologia', now()) RETURNING id;\"\n   ```\n   Se o id devolvido não for 1, ajuste `cost_center_id` no ambiente.\n3. Rode a pasta **02 Cadastro** de cima para baixo (cria Maria, João, Admin e Aprovador).\n4. Promova o primeiro Admin pelo banco (o mesmo problema do ovo e da galinha do passo 2):\n   ```\n   docker compose exec db psql -U purchase -d purchase -c \"UPDATE app_user SET role = 'ADMIN', cost_center_id = NULL WHERE email = 'admin@example.com';\"\n   ```\n   O Aprovador já é promovido pela API: depois do login do Admin, rode **07 Usuários → Promover Aprovador** e então refaça o login do Aprovador (o papel só muda no token novo).\n5. Rode os logins da pasta **03 Login**. Um script pós-resposta (aba Scripts de cada login) grava o token em `token_maria`, `token_admin` ou `token_aprovador` no Base Environment. Como o token dura 15 min, refaça o login quando aparecer 401 inesperado.\n\nPara recomeçar do zero: `docker compose down -v` apaga o volume do banco.\n\n## Ambientes\n\n- **Local (back direto):** `base_url` = http://localhost:8080 (`./mvnw spring-boot:run`).\n- **Compose (via proxy do front):** `base_url` = http://localhost:4200/api, depois que o compose completo existir.\n\nNenhum token fica salvo no arquivo: os `token_*` começam vazios e são preenchidos pelos logins."
     },
     {
       "_id": "env_base",
@@ -23,7 +23,10 @@
         "senha": "Senha-Forte-123",
         "token_maria": "",
         "token_admin": "",
-        "token_aprovador": ""
+        "token_aprovador": "",
+        "aprovador_id": "",
+        "cost_center_fin_id": "",
+        "budget_month": "2026-11"
       }
     },
     {
@@ -47,7 +50,10 @@
     { "_id": "fld_register", "_type": "request_group", "parentId": "wrk_purchase", "name": "02 Cadastro (/auth/register)", "metaSortKey": 2, "description": "Rode os quatro primeiros na ordem: eles criam os usuários usados no resto da coleção." },
     { "_id": "fld_login", "_type": "request_group", "parentId": "wrk_purchase", "name": "03 Login (/auth/login)", "metaSortKey": 3, "description": "Os três primeiros alimentam token_maria, token_admin e token_aprovador." },
     { "_id": "fld_me", "_type": "request_group", "parentId": "wrk_purchase", "name": "04 Sessão (/auth/me) e tokens inválidos", "metaSortKey": 4, "description": "Todo 401 deve vir em application/problem+json com code UNAUTHORIZED e header WWW-Authenticate: Bearer." },
-    { "_id": "fld_authz", "_type": "request_group", "parentId": "wrk_purchase", "name": "05 Autorização por papel (403)", "metaSortKey": 5, "description": "Rotas exclusivas de ADMIN já são barradas no SecurityFilterChain. Os endpoints em si chegam na E12, então para ADMIN a resposta hoje é 404 (e não 403)." },
+    { "_id": "fld_authz", "_type": "request_group", "parentId": "wrk_purchase", "name": "05 Autorização por papel (403)", "metaSortKey": 5, "description": "Rotas exclusivas de ADMIN (/users/**, POST /cost-centers, PUT de orçamento) são barradas no SecurityFilterChain, antes de o corpo ser lido." },
+    { "_id": "fld_cost_centers", "_type": "request_group", "parentId": "wrk_purchase", "name": "06 Centros de custo (/cost-centers)", "metaSortKey": 6, "description": "GET para qualquer autenticado; POST só ADMIN. O código é gravado em maiúsculas e é único sem diferenciar maiúsculas." },
+    { "_id": "fld_users", "_type": "request_group", "parentId": "wrk_purchase", "name": "07 Usuários (/users, ADMIN)", "metaSortKey": 7, "description": "Coerência de perfil: approverLevel só (e sempre) para APROVADOR; centro de custo obrigatório fora de ADMIN. Violação → 422 com code específico. O PATCH é parcial: campo ausente mantém o valor atual. O perfil novo só vale no próximo login (claims do JWT, ADR 007)." },
+    { "_id": "fld_budgets", "_type": "request_group", "parentId": "wrk_purchase", "name": "08 Orçamentos (/cost-centers/:id/budgets/:yyyy-mm)", "metaSortKey": 8, "description": "GET para qualquer autenticado; PUT só ADMIN. Valores em string com 2 casas. O PUT é um único INSERT ... ON CONFLICT DO UPDATE ... WHERE consumed <= novo valor (sem ler antes de gravar), então não há corrida com uma aprovação simultânea." },
 
     {
       "_id": "req_health", "_type": "request", "parentId": "fld_infra", "metaSortKey": 1,
@@ -112,7 +118,8 @@
       "name": "Cadastrar futuro Aprovador → 201", "method": "POST", "url": "{{ _.base_url }}/auth/register",
       "headers": [{ "name": "Content-Type", "value": "application/json" }], "authentication": {},
       "body": { "mimeType": "application/json", "text": "{\n  \"name\": \"Paulo Aprovador\",\n  \"email\": \"aprovador@example.com\",\n  \"password\": \"{{ _.senha }}\",\n  \"costCenterId\": {{ _.cost_center_id }}\n}" },
-      "description": "Nasce SOLICITANTE. Depois rode o UPDATE do passo 4 da preparação para virar APROVADOR NIVEL_2."
+      "afterResponseScript": "const body = insomnia.response.json();\nif (body && body.id) {\n  insomnia.baseEnvironment.set('aprovador_id', body.id);\n}",
+      "description": "Nasce SOLICITANTE. O script pós-resposta grava o id em aprovador_id; a promoção a APROVADOR NIVEL_2 é feita em 07 Usuários → Promover Aprovador."
     },
     {
       "_id": "req_register_duplicado", "_type": "request", "parentId": "fld_register", "metaSortKey": 5,
@@ -302,15 +309,146 @@
     },
     {
       "_id": "req_authz_cc_get_solicitante", "_type": "request", "parentId": "fld_authz", "metaSortKey": 6,
-      "name": "SOLICITANTE lista centros de custo → 404 (não é 403)", "method": "GET", "url": "{{ _.base_url }}/cost-centers",
+      "name": "SOLICITANTE lista centros de custo → 200 (não é 403)", "method": "GET", "url": "{{ _.base_url }}/cost-centers",
       "headers": [], "authentication": { "type": "bearer", "token": "{{ _.token_maria }}" }, "body": {},
-      "description": "GET /cost-centers não é exclusivo de ADMIN, então passa pela segurança. Hoje dá 404 porque o endpoint só chega na E12."
+      "description": "GET /cost-centers não é exclusivo de ADMIN: qualquer autenticado lista. Esperado: 200 com a lista ordenada por code."
     },
     {
       "_id": "req_authz_users_get_admin", "_type": "request", "parentId": "fld_authz", "metaSortKey": 7,
-      "name": "ADMIN lista usuários → 404 (não é 403)", "method": "GET", "url": "{{ _.base_url }}/users",
+      "name": "ADMIN lista usuários → 200 (não é 403)", "method": "GET", "url": "{{ _.base_url }}/users",
       "headers": [], "authentication": { "type": "bearer", "token": "{{ _.token_admin }}" }, "body": {},
-      "description": "Prova que o ADMIN passa pela regra do SecurityFilterChain. Hoje dá 404 porque o endpoint só chega na E12; depois dela, 200."
+      "description": "Prova que o ADMIN passa pela regra do SecurityFilterChain. Esperado: 200 com a lista de usuários, sem senha nem hash."
+    },
+
+    {
+      "_id": "req_cc_list", "_type": "request", "parentId": "fld_cost_centers", "metaSortKey": 1,
+      "name": "Listar centros de custo (Maria) → 200", "method": "GET", "url": "{{ _.base_url }}/cost-centers",
+      "headers": [], "authentication": { "type": "bearer", "token": "{{ _.token_maria }}" }, "body": {},
+      "description": "Esperado: 200 com [{ id, code, name, createdAt }], ordenado por code."
+    },
+    {
+      "_id": "req_cc_create", "_type": "request", "parentId": "fld_cost_centers", "metaSortKey": 2,
+      "name": "Criar CC-FIN-01 (Admin) → 201", "method": "POST", "url": "{{ _.base_url }}/cost-centers",
+      "headers": [{ "name": "Content-Type", "value": "application/json" }], "authentication": { "type": "bearer", "token": "{{ _.token_admin }}" },
+      "body": { "mimeType": "application/json", "text": "{\n  \"code\": \"cc-fin-01\",\n  \"name\": \"Financeiro\"\n}" },
+      "afterResponseScript": "const body = insomnia.response.json();\nif (body && body.id) {\n  insomnia.baseEnvironment.set('cost_center_fin_id', body.id);\n}",
+      "description": "Esperado: 201 com code \"CC-FIN-01\" (gravado em maiúsculas). O script pós-resposta grava o id em cost_center_fin_id. Rodar de novo dá o 422 do próximo exemplo."
+    },
+    {
+      "_id": "req_cc_duplicado", "_type": "request", "parentId": "fld_cost_centers", "metaSortKey": 3,
+      "name": "Código já usado (outra caixa) → 422", "method": "POST", "url": "{{ _.base_url }}/cost-centers",
+      "headers": [{ "name": "Content-Type", "value": "application/json" }], "authentication": { "type": "bearer", "token": "{{ _.token_admin }}" },
+      "body": { "mimeType": "application/json", "text": "{\n  \"code\": \"Cc-Ti-01\",\n  \"name\": \"Outro\"\n}" },
+      "description": "Esperado: 422 COST_CENTER_CODE_ALREADY_EXISTS (o CC-TI-01 da preparação já existe)."
+    },
+    {
+      "_id": "req_cc_invalido", "_type": "request", "parentId": "fld_cost_centers", "metaSortKey": 4,
+      "name": "Campos inválidos → 400 com errors[]", "method": "POST", "url": "{{ _.base_url }}/cost-centers",
+      "headers": [{ "name": "Content-Type", "value": "application/json" }], "authentication": { "type": "bearer", "token": "{{ _.token_admin }}" },
+      "body": { "mimeType": "application/json", "text": "{\n  \"code\": \"CC FIN\",\n  \"name\": \"\"\n}" },
+      "description": "Esperado: 400 VALIDATION_FAILED com errors[] para code (espaço não é permitido) e name."
+    },
+
+    {
+      "_id": "req_users_list", "_type": "request", "parentId": "fld_users", "metaSortKey": 1,
+      "name": "Listar usuários → 200", "method": "GET", "url": "{{ _.base_url }}/users",
+      "headers": [], "authentication": { "type": "bearer", "token": "{{ _.token_admin }}" }, "body": {},
+      "description": "Esperado: 200 com [{ id, name, email, role, approverLevel, costCenterId }] ordenado por id; nenhum campo de senha."
+    },
+    {
+      "_id": "req_users_promover_aprovador", "_type": "request", "parentId": "fld_users", "metaSortKey": 2,
+      "name": "Promover Aprovador (PATCH) → 200", "method": "PATCH", "url": "{{ _.base_url }}/users/{{ _.aprovador_id }}",
+      "headers": [{ "name": "Content-Type", "value": "application/json" }], "authentication": { "type": "bearer", "token": "{{ _.token_admin }}" },
+      "body": { "mimeType": "application/json", "text": "{\n  \"role\": \"APROVADOR\",\n  \"approverLevel\": \"NIVEL_2\"\n}" },
+      "description": "Usa o aprovador_id gravado no cadastro (02). Esperado: 200 com role APROVADOR e approverLevel NIVEL_2; costCenterId mantido. Depois refaça 03 → Login Aprovador para ter as claims novas."
+    },
+    {
+      "_id": "req_users_criar_aprovador_fin", "_type": "request", "parentId": "fld_users", "metaSortKey": 3,
+      "name": "Criar APROVADOR NIVEL_1 no CC-FIN-01 → 201", "method": "POST", "url": "{{ _.base_url }}/users",
+      "headers": [{ "name": "Content-Type", "value": "application/json" }], "authentication": { "type": "bearer", "token": "{{ _.token_admin }}" },
+      "body": { "mimeType": "application/json", "text": "{\n  \"name\": \"Fernanda Financeiro\",\n  \"email\": \"fernanda@example.com\",\n  \"password\": \"{{ _.senha }}\",\n  \"role\": \"APROVADOR\",\n  \"approverLevel\": \"NIVEL_1\",\n  \"costCenterId\": {{ _.cost_center_fin_id }}\n}" },
+      "description": "Rode antes 06 → Criar CC-FIN-01. Esperado: 201 com o papel pedido (diferente do /auth/register, aqui o ADMIN escolhe o papel). O login com fernanda@example.com e a senha do ambiente funciona."
+    },
+    {
+      "_id": "req_users_aprovador_sem_nivel", "_type": "request", "parentId": "fld_users", "metaSortKey": 4,
+      "name": "APROVADOR sem approverLevel → 422", "method": "POST", "url": "{{ _.base_url }}/users",
+      "headers": [{ "name": "Content-Type", "value": "application/json" }], "authentication": { "type": "bearer", "token": "{{ _.token_admin }}" },
+      "body": { "mimeType": "application/json", "text": "{\n  \"name\": \"Sem Nível\",\n  \"email\": \"semnivel@example.com\",\n  \"password\": \"{{ _.senha }}\",\n  \"role\": \"APROVADOR\",\n  \"costCenterId\": {{ _.cost_center_id }}\n}" },
+      "description": "Esperado: 422 APPROVER_LEVEL_REQUIRED."
+    },
+    {
+      "_id": "req_users_nivel_para_solicitante", "_type": "request", "parentId": "fld_users", "metaSortKey": 5,
+      "name": "approverLevel para SOLICITANTE (PATCH) → 422", "method": "PATCH", "url": "{{ _.base_url }}/users/1",
+      "headers": [{ "name": "Content-Type", "value": "application/json" }], "authentication": { "type": "bearer", "token": "{{ _.token_admin }}" },
+      "body": { "mimeType": "application/json", "text": "{\n  \"approverLevel\": \"NIVEL_1\"\n}" },
+      "description": "Usuário 1 = Maria (SOLICITANTE) se a preparação foi seguida do zero. Esperado: 422 APPROVER_LEVEL_NOT_ALLOWED; nada muda."
+    },
+    {
+      "_id": "req_users_solicitante_sem_cc", "_type": "request", "parentId": "fld_users", "metaSortKey": 6,
+      "name": "SOLICITANTE sem centro de custo → 422", "method": "POST", "url": "{{ _.base_url }}/users",
+      "headers": [{ "name": "Content-Type", "value": "application/json" }], "authentication": { "type": "bearer", "token": "{{ _.token_admin }}" },
+      "body": { "mimeType": "application/json", "text": "{\n  \"name\": \"Sem Centro\",\n  \"email\": \"semcentro@example.com\",\n  \"password\": \"{{ _.senha }}\",\n  \"role\": \"SOLICITANTE\"\n}" },
+      "description": "Esperado: 422 COST_CENTER_REQUIRED (só o ADMIN pode ser global)."
+    },
+    {
+      "_id": "req_users_patch_inexistente", "_type": "request", "parentId": "fld_users", "metaSortKey": 7,
+      "name": "Editar usuário inexistente → 404", "method": "PATCH", "url": "{{ _.base_url }}/users/999999",
+      "headers": [{ "name": "Content-Type", "value": "application/json" }], "authentication": { "type": "bearer", "token": "{{ _.token_admin }}" },
+      "body": { "mimeType": "application/json", "text": "{\n  \"role\": \"ADMIN\"\n}" },
+      "description": "Esperado: 404 NOT_FOUND em application/problem+json."
+    },
+    {
+      "_id": "req_users_papel_desconhecido", "_type": "request", "parentId": "fld_users", "metaSortKey": 8,
+      "name": "Papel desconhecido → 400", "method": "PATCH", "url": "{{ _.base_url }}/users/1",
+      "headers": [{ "name": "Content-Type", "value": "application/json" }], "authentication": { "type": "bearer", "token": "{{ _.token_admin }}" },
+      "body": { "mimeType": "application/json", "text": "{\n  \"role\": \"CHEFE\"\n}" },
+      "description": "Esperado: 400 MALFORMED_REQUEST (valor fora do enum Role)."
+    },
+
+    {
+      "_id": "req_budget_sem_orcamento", "_type": "request", "parentId": "fld_budgets", "metaSortKey": 1,
+      "name": "Mês sem orçamento (Maria) → 200 com saldo zero", "method": "GET", "url": "{{ _.base_url }}/cost-centers/{{ _.cost_center_id }}/budgets/2030-01",
+      "headers": [], "authentication": { "type": "bearer", "token": "{{ _.token_maria }}" }, "body": {},
+      "description": "Esperado: 200 com amount, consumed e available iguais a \"0.00\" (mês sem orçamento cadastrado tem saldo zero)."
+    },
+    {
+      "_id": "req_budget_definir", "_type": "request", "parentId": "fld_budgets", "metaSortKey": 2,
+      "name": "Definir orçamento do mês (Admin) → 200", "method": "PUT", "url": "{{ _.base_url }}/cost-centers/{{ _.cost_center_id }}/budgets/{{ _.budget_month }}",
+      "headers": [{ "name": "Content-Type", "value": "application/json" }], "authentication": { "type": "bearer", "token": "{{ _.token_admin }}" },
+      "body": { "mimeType": "application/json", "text": "{\n  \"amount\": \"15000.00\"\n}" },
+      "description": "Cria o orçamento se o mês não tem, ou atualiza o valor orçado. Esperado: 200 com { costCenterId, month, amount, consumed, available }."
+    },
+    {
+      "_id": "req_budget_consultar", "_type": "request", "parentId": "fld_budgets", "metaSortKey": 3,
+      "name": "Consultar orçamento do mês → 200", "method": "GET", "url": "{{ _.base_url }}/cost-centers/{{ _.cost_center_id }}/budgets/{{ _.budget_month }}",
+      "headers": [], "authentication": { "type": "bearer", "token": "{{ _.token_maria }}" }, "body": {},
+      "description": "Esperado: 200 com o valor definido no passo anterior."
+    },
+    {
+      "_id": "req_budget_abaixo_consumido", "_type": "request", "parentId": "fld_budgets", "metaSortKey": 4,
+      "name": "Abaixo do consumido → 422", "method": "PUT", "url": "{{ _.base_url }}/cost-centers/{{ _.cost_center_id }}/budgets/{{ _.budget_month }}",
+      "headers": [{ "name": "Content-Type", "value": "application/json" }], "authentication": { "type": "bearer", "token": "{{ _.token_admin }}" },
+      "body": { "mimeType": "application/json", "text": "{\n  \"amount\": \"799.99\"\n}" },
+      "description": "Até a E17 nada consome orçamento pela API, então simule um consumo antes:\n```\ndocker compose exec db psql -U purchase -d purchase -c \"UPDATE budget SET consumed = 800 WHERE cost_center_id = 1 AND month = '2026-11-01';\"\n```\nEsperado: 422 BUDGET_BELOW_CONSUMED com o valor pedido e o consumido no detail; o amount não muda. Com \"800.00\" passa (available 0.00)."
+    },
+    {
+      "_id": "req_budget_tres_casas", "_type": "request", "parentId": "fld_budgets", "metaSortKey": 5,
+      "name": "Valor com 3 casas ou negativo → 400", "method": "PUT", "url": "{{ _.base_url }}/cost-centers/{{ _.cost_center_id }}/budgets/{{ _.budget_month }}",
+      "headers": [{ "name": "Content-Type", "value": "application/json" }], "authentication": { "type": "bearer", "token": "{{ _.token_admin }}" },
+      "body": { "mimeType": "application/json", "text": "{\n  \"amount\": \"10.505\"\n}" },
+      "description": "Esperado: 400 VALIDATION_FAILED com errors[0].field = amount; o valor nunca é arredondado. Troque por \"-1.00\" para ver a mensagem de negativo."
+    },
+    {
+      "_id": "req_budget_mes_invalido", "_type": "request", "parentId": "fld_budgets", "metaSortKey": 6,
+      "name": "Mês em formato inválido → 400", "method": "GET", "url": "{{ _.base_url }}/cost-centers/{{ _.cost_center_id }}/budgets/2026-13",
+      "headers": [], "authentication": { "type": "bearer", "token": "{{ _.token_maria }}" }, "body": {},
+      "description": "Esperado: 400 VALIDATION_FAILED com errors[0].field = month (formato yyyy-MM)."
+    },
+    {
+      "_id": "req_budget_cc_inexistente", "_type": "request", "parentId": "fld_budgets", "metaSortKey": 7,
+      "name": "Centro de custo inexistente → 404", "method": "GET", "url": "{{ _.base_url }}/cost-centers/999999/budgets/{{ _.budget_month }}",
+      "headers": [], "authentication": { "type": "bearer", "token": "{{ _.token_maria }}" }, "body": {},
+      "description": "Esperado: 404 NOT_FOUND em application/problem+json."
     }
   ]
 }
