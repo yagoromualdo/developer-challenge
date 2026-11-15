@@ -16,6 +16,7 @@ import jakarta.validation.constraints.Min;
 import jakarta.validation.constraints.Pattern;
 import java.net.URI;
 import java.time.LocalDate;
+import java.util.List;
 import java.util.Set;
 import org.springframework.format.annotation.DateTimeFormat;
 import org.springframework.http.HttpStatus;
@@ -98,6 +99,18 @@ class PurchaseRequestController {
     @GetMapping("/{id}")
     PurchaseRequestResponse get(Actor actor, @PathVariable Long id) {
         return PurchaseRequestResponse.from(requestService.get(actor, id));
+    }
+
+    @GetMapping("/{id}/versions")
+    List<RequestVersionSummaryResponse> listVersions(Actor actor, @PathVariable Long id) {
+        return requestService.listVersions(actor, id).stream()
+                .map(RequestVersionSummaryResponse::from)
+                .toList();
+    }
+
+    @GetMapping("/{id}/versions/{versionNumber}")
+    RequestVersionResponse getVersion(Actor actor, @PathVariable Long id, @PathVariable int versionNumber) {
+        return RequestVersionResponse.from(requestService.getVersion(actor, id, versionNumber));
     }
 
     @PutMapping("/{id}")

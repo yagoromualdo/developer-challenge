@@ -540,3 +540,22 @@ One block per agent turn, one row per changed file:
 | `backend/src/test/java/com/kingspan/purchase/request/domain/RequestSnapshotTest.java` | modified | +44 | -0 |
 | `backend/src/test/java/com/kingspan/purchase/request/domain/StepStatusTest.java` | created | +25 | -0 |
 | `backend/src/test/java/com/kingspan/purchase/request/web/ApprovalIntegrationTest.java` | created | +498 | -0 |
+
+---
+### Turn 2026-11-15 15:57:24 -0300 · ClaudeCode
+- **Source**: command
+- **Session**: 79e364f3-0acb-43d5-8980-edae3881f101
+- **Prompt**: Execute a etapa E18 do docs/plano-execucao.md. A v1 deve continuar imutável e consultável depois do reenvio, e as aprovações da v1 não podem contar na v2.
+- **Summary**: E18: add request versions endpoints, guard submitted version immutability and integration tests for resubmission
+
+| File | Change | Additions | Removals |
+|---|---|---|---|
+| `backend/src/main/java/com/kingspan/purchase/request/application/PurchaseRequestService.java` | modified | +20 | -0 |
+| `backend/src/main/java/com/kingspan/purchase/request/application/RequestVersionSummaryView.java` | created | +31 | -0 |
+| `backend/src/main/java/com/kingspan/purchase/request/application/RequestVersionView.java` | created | +50 | -0 |
+| `backend/src/main/java/com/kingspan/purchase/request/infra/RequestVersionEntity.java` | modified | +12 | -1 |
+| `backend/src/main/java/com/kingspan/purchase/request/web/PurchaseRequestController.java` | modified | +13 | -0 |
+| `backend/src/main/java/com/kingspan/purchase/request/web/RequestVersionResponse.java` | created | +57 | -0 |
+| `backend/src/main/java/com/kingspan/purchase/request/web/RequestVersionSummaryResponse.java` | created | +29 | -0 |
+| `backend/src/test/java/com/kingspan/purchase/request/infra/PurchaseRequestPersistenceIntegrationTest.java` | modified | +31 | -0 |
+| `backend/src/test/java/com/kingspan/purchase/request/web/RequestVersioningIntegrationTest.java` | created | +395 | -0 |

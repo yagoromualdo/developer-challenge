@@ -163,6 +163,37 @@ class PurchaseRequestPersistenceIntegrationTest {
     }
 
     @Test
+    void deveRecusarAlterarVersaoJaSubmetida() {
+        Long requestId = saveSubmittedRequest(List.of(StepLevel.NIVEL_1));
+
+        transaction.executeWithoutResult(status -> {
+            RequestVersionEntity submitted =
+                    requests.findById(requestId).orElseThrow().getCurrentVersion();
+            assertThatThrownBy(() -> submitted.updateContent(
+                            "Outro título",
+                            "Outra descrição",
+                            Category.EQUIPMENT,
+                            null,
+                            new BigDecimal("99.90"),
+                            List.of(item("Mouse", 1, "99.90"))))
+                    .isInstanceOf(IllegalStateException.class)
+                    .hasMessageContaining("imutável");
+            assertThatThrownBy(() -> submitted.markSubmitted(NOW, YearMonth.of(2026, 12)))
+                    .isInstanceOf(IllegalStateException.class);
+            assertThatThrownBy(() -> submitted.defineChain(List.of(StepLevel.NIVEL_2)))
+                    .isInstanceOf(IllegalStateException.class);
+            status.setRollbackOnly();
+        });
+
+        assertThat(jdbc.queryForObject(
+                        "SELECT count(*) FROM request_item i JOIN request_version v ON v.id = i.version_id"
+                                + " WHERE v.request_id = ? AND i.description = 'Notebook'",
+                        Long.class,
+                        requestId))
+                .isEqualTo(1);
+    }
+
+    @Test
     void deveIncrementarOLockVersionQuandoSoOsFilhosMudam() {
         Long requestId = saveDraft(List.of(item("Notebook", 1, "4899.90")));
         long before = lockVersionOf(requestId);

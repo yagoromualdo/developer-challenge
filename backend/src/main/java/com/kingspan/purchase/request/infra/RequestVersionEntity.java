@@ -101,6 +101,7 @@ public class RequestVersionEntity {
             LocalDate neededBy,
             BigDecimal total,
             List<RequestItemEntity> items) {
+        requireNotSubmitted();
         this.title = Objects.requireNonNull(title, "title");
         this.description = Objects.requireNonNull(description, "description");
         this.category = Objects.requireNonNull(category, "category");
@@ -129,6 +130,7 @@ public class RequestVersionEntity {
     }
 
     public void markSubmitted(Instant submittedAt, YearMonth competenceMonth) {
+        requireNotSubmitted();
         this.submittedAt = Objects.requireNonNull(submittedAt, "submittedAt");
         this.competenceMonth =
                 Objects.requireNonNull(competenceMonth, "competenceMonth").atDay(1);
@@ -137,9 +139,18 @@ public class RequestVersionEntity {
     /** Grava a cadeia montada pelo {@code ApprovalChainBuilder}, na ordem recebida, com todas as etapas pendentes. */
     public void defineChain(List<StepLevel> levels) {
         Objects.requireNonNull(levels, "levels");
-        steps.clear();
+        if (!steps.isEmpty()) {
+            throw new IllegalStateException("A versão " + versionNumber + " já tem cadeia de aprovação");
+        }
         for (int index = 0; index < levels.size(); index++) {
             steps.add(new ApprovalStepEntity(this, index + 1, levels.get(index)));
+        }
+    }
+
+    // Última defesa da imutabilidade (ADR 002): os services já só alteram a versão de trabalho, nunca uma submetida.
+    private void requireNotSubmitted() {
+        if (submittedAt != null) {
+            throw new IllegalStateException("A versão " + versionNumber + " já foi submetida e é imutável");
         }
     }
 

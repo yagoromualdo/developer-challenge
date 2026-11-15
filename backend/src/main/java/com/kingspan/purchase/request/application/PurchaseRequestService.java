@@ -21,6 +21,7 @@ import com.kingspan.purchase.shared.domain.Actor;
 import com.kingspan.purchase.shared.domain.BusinessTime;
 import com.kingspan.purchase.shared.error.BusinessRuleException;
 import com.kingspan.purchase.shared.error.ErrorCode;
+import com.kingspan.purchase.shared.error.ResourceNotFoundException;
 import com.kingspan.purchase.shared.web.RequestId;
 import java.time.Clock;
 import java.time.Instant;
@@ -172,6 +173,25 @@ public class PurchaseRequestService {
     @Transactional(readOnly = true)
     public RequestDetailView get(Actor actor, Long requestId) {
         return detail(actor, guard.findVisible(actor, requestId));
+    }
+
+    /** Todas as versões, da v1 à atual; as anteriores à atual estão congeladas e não mudam mais (ADR 002). */
+    @Transactional(readOnly = true)
+    public List<RequestVersionSummaryView> listVersions(Actor actor, Long requestId) {
+        return guard.findVisible(actor, requestId).getVersions().stream()
+                .map(RequestVersionSummaryView::from)
+                .toList();
+    }
+
+    /** Mesma visibilidade do detalhe: versão inexistente de uma solicitação visível também é 404. */
+    @Transactional(readOnly = true)
+    public RequestVersionView getVersion(Actor actor, Long requestId, int versionNumber) {
+        return guard.findVisible(actor, requestId).getVersions().stream()
+                .filter(version -> version.getVersionNumber() == versionNumber)
+                .findFirst()
+                .map(RequestVersionView::from)
+                .orElseThrow(() -> new ResourceNotFoundException(
+                        "A solicitação " + requestId + " não tem a versão " + versionNumber + "."));
     }
 
     /** Listagem dentro da visibilidade do ator: quem filtra por um centro de custo que não vê recebe página vazia. */
