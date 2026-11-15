@@ -20,6 +20,7 @@ public enum ErrorCode {
     BUDGET_EXCEEDED,
     BUDGET_BELOW_CONSUMED,
     COMMENT_REQUIRED,
+    NOT_REQUEST_OWNER,
     // 500
     INTERNAL_ERROR;
 

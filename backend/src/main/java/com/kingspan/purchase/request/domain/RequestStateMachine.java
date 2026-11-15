@@ -89,11 +89,14 @@ public final class RequestStateMachine {
     }
 
     private static String invalidTransitionMessage(RequestStatus from, RequestAction action) {
-        String prefix = "Não é possível " + actionPhrase(action) + ": ";
+        return "Não é possível " + action.phrase() + ": " + invalidTransitionReason(from, action);
+    }
+
+    static String invalidTransitionReason(RequestStatus from, RequestAction action) {
         if (from.isFinal()) {
-            return prefix + "ela está em " + from + ", um estado final que não aceita mais nenhuma ação.";
+            return "ela está em " + from + ", um estado final que não aceita mais nenhuma ação.";
         }
-        return prefix + "ela está em " + from + ", e essa ação só é permitida em " + statusesAllowing(action) + ".";
+        return "ela está em " + from + ", e essa ação só é permitida em " + statusesAllowing(action) + ".";
     }
 
     private static String statusesAllowing(RequestAction action) {
@@ -101,17 +104,6 @@ public final class RequestStateMachine {
                 .filter(entry -> entry.getValue().containsKey(action))
                 .map(entry -> entry.getKey().name())
                 .collect(Collectors.joining(" ou "));
-    }
-
-    private static String actionPhrase(RequestAction action) {
-        return switch (action) {
-            case EDIT -> "editar a solicitação";
-            case SUBMIT -> "submeter a solicitação";
-            case APPROVE -> "aprovar a solicitação";
-            case REJECT -> "rejeitar a solicitação";
-            case REQUEST_CHANGES -> "devolver a solicitação para ajuste";
-            case CANCEL -> "cancelar a solicitação";
-        };
     }
 
     /** Destino de uma transição; só a aprovação depende da posição da etapa. */

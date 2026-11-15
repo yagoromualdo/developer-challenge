@@ -193,3 +193,55 @@ One block per agent turn, one row per changed file:
 | `backend/src/main/java/com/kingspan/purchase/request/domain/StepLevel.java` | modified | +3 | -0 |
 | `backend/src/main/java/com/kingspan/purchase/request/domain/ThresholdRule.java` | created | +31 | -0 |
 | `backend/src/test/java/com/kingspan/purchase/request/domain/ApprovalChainBuilderTest.java` | created | +142 | -0 |
+
+---
+### Turn 2026-11-14 20:57:52 -0300 · ClaudeCode
+- **Source**: command
+- **Session**: 5830eaad-50b7-487e-b9cb-ad49dca61720
+- **Prompt**: Execute a etapa E8 do docs/plano-execucao.md. A mesma ActionPolicy precisa servir tanto para validar a ação (422) quanto para montar o allowedActions. Inclua o teste ArchUnit de isolamento do domínio.
+- **Summary**: E8: add ApprovalRules, ActionPolicy (role check, 422 validation and allowedActions from one evaluation), comment rule and ArchUnit domain isolation test
+
+| File | Change | Additions | Removals |
+|---|---|---|---|
+| `backend/src/main/java/com/kingspan/purchase/request/domain/ActionPolicy.java` | created | +172 | -0 |
+| `backend/src/main/java/com/kingspan/purchase/request/domain/ApprovalRule.java` | created | +15 | -0 |
+| `backend/src/main/java/com/kingspan/purchase/request/domain/ApprovalStep.java` | created | +38 | -0 |
+| `backend/src/main/java/com/kingspan/purchase/request/domain/NoOtherStepApprovedRule.java` | created | +20 | -0 |
+| `backend/src/main/java/com/kingspan/purchase/request/domain/NotOwnerRule.java` | created | +19 | -0 |
+| `backend/src/main/java/com/kingspan/purchase/request/domain/RequestAction.java` | modified | +27 | -6 |
+| `backend/src/main/java/com/kingspan/purchase/request/domain/RequestSnapshot.java` | created | +36 | -0 |
+| `backend/src/main/java/com/kingspan/purchase/request/domain/RequestStateMachine.java` | modified | +7 | -14 |
+| `backend/src/main/java/com/kingspan/purchase/request/domain/RuleViolation.java` | created | +18 | -0 |
+| `backend/src/main/java/com/kingspan/purchase/request/domain/SameCostCenterRule.java` | created | +24 | -0 |
+| `backend/src/main/java/com/kingspan/purchase/request/domain/StepStatus.java` | created | +9 | -0 |
+| `backend/src/main/java/com/kingspan/purchase/request/domain/SufficientLevelRule.java` | created | +57 | -0 |
+| `backend/src/main/java/com/kingspan/purchase/shared/error/ErrorCode.java` | modified | +1 | -0 |
+| `backend/src/test/java/com/kingspan/purchase/DomainIsolationArchTest.java` | created | +78 | -0 |
+| `backend/src/test/java/com/kingspan/purchase/request/domain/ActionPolicyTest.java` | created | +503 | -0 |
+| `backend/src/test/java/com/kingspan/purchase/request/domain/RequestSnapshotTest.java` | created | +63 | -0 |
+
+---
+### Turn 2026-11-14 21:22:30 -0300 · ClaudeCode
+- **Source**: command
+- **Session**: 5830eaad-50b7-487e-b9cb-ad49dca61720
+- **Prompt**: <pasted_content id="d546"> Os comentários do código da E8 estão excessivos. Ajuste seguindo esta regra: - Remova comentários que só repetem o que o código já diz (nome de método, parâmetro, "valida X", "retorna Y") e banners de seção. - Mantenha apenas comentários curtos (1–2 linhas) que expliquem o PORQUÊ de algo não óbvio, por exemplo: uma regra de negócio sutil, uma decisão de design ou um caso de borda. - Javadoc só em tipos/métodos públicos cuja intenção não fique c
+- **Summary**: Trim redundant comments in E8 code and tests (no behavior change); add concise-comment rule to backend and frontend CLAUDE.md
+
+| File | Change | Additions | Removals |
+|---|---|---|---|
+| `backend/CLAUDE.md` | modified | +6 | -1 |
+| `backend/src/main/java/com/kingspan/purchase/request/domain/ActionPolicy.java` | modified | +7 | -43 |
+| `backend/src/main/java/com/kingspan/purchase/request/domain/ApprovalRule.java` | modified | +1 | -6 |
+| `backend/src/main/java/com/kingspan/purchase/request/domain/ApprovalStep.java` | modified | +0 | -5 |
+| `backend/src/main/java/com/kingspan/purchase/request/domain/NoOtherStepApprovedRule.java` | modified | +0 | -4 |
+| `backend/src/main/java/com/kingspan/purchase/request/domain/NotOwnerRule.java` | modified | +1 | -1 |
+| `backend/src/main/java/com/kingspan/purchase/request/domain/RequestAction.java` | modified | +1 | -3 |
+| `backend/src/main/java/com/kingspan/purchase/request/domain/RequestSnapshot.java` | modified | +1 | -9 |
+| `backend/src/main/java/com/kingspan/purchase/request/domain/RequestStateMachine.java` | modified | +0 | -1 |
+| `backend/src/main/java/com/kingspan/purchase/request/domain/RuleViolation.java` | modified | +1 | -6 |
+| `backend/src/main/java/com/kingspan/purchase/request/domain/SameCostCenterRule.java` | modified | +0 | -4 |
+| `backend/src/main/java/com/kingspan/purchase/request/domain/StepStatus.java` | modified | +0 | -1 |
+| `backend/src/main/java/com/kingspan/purchase/request/domain/SufficientLevelRule.java` | modified | +0 | -9 |
+| `backend/src/test/java/com/kingspan/purchase/DomainIsolationArchTest.java` | modified | +1 | -6 |
+| `backend/src/test/java/com/kingspan/purchase/request/domain/ActionPolicyTest.java` | modified | +1 | -23 |
+| `frontend/CLAUDE.md` | modified | +5 | -0 |
