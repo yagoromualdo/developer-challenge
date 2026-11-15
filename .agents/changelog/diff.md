@@ -245,3 +245,27 @@ One block per agent turn, one row per changed file:
 | `backend/src/test/java/com/kingspan/purchase/DomainIsolationArchTest.java` | modified | +1 | -6 |
 | `backend/src/test/java/com/kingspan/purchase/request/domain/ActionPolicyTest.java` | modified | +1 | -23 |
 | `frontend/CLAUDE.md` | modified | +5 | -0 |
+
+---
+### Turn 2026-11-14 22:08:10 -0300 · ClaudeCode
+- **Source**: command
+- **Session**: 71550e04-6858-452c-ae3c-f54baa509c14
+- **Prompt**: Execute a etapa E9 do docs/plano-execucao.md. Inclua o CHECK (consumed >= 0 AND consumed <= amount) na tabela budget e a UNIQUE (user_id, key) em idempotency_key. Os status e níveis gravados em approval_step devem corresponder aos enums do domínio criados na E8 (StepStatus, StepLevel).
+- **Summary**: E9: add Flyway V1 schema (9 tables, enum CHECKs, budget CHECK, idempotency UNIQUE, append-only event trigger) and migration integration test
+
+| File | Change | Additions | Removals |
+|---|---|---|---|
+| `backend/src/main/resources/db/migration/V1__schema.sql` | created | +181 | -0 |
+| `backend/src/test/java/com/kingspan/purchase/SchemaMigrationIntegrationTest.java` | created | +287 | -0 |
+
+---
+### Turn 2026-11-14 22:26:28 -0300 · ClaudeCode
+- **Source**: command
+- **Session**: 71550e04-6858-452c-ae3c-f54baa509c14
+- **Prompt**: <pasted_content id="0ac0"> Ajustes na E9 antes do commit: 1. app_user: garanta que a regra do nível vale nos dois sentidos (role = 'APROVADOR' exige approver_level NOT NULL; outros papéis exigem approver_level NULL). 2. request_item: adicione UNIQUE (version_id, line_number) DEFERRABLE INITIALLY DEFERRED, para manter a integridade sem conflitar com a ordem de flush do Hibernate. Ajuste o nome das colunas se forem diferentes. 3. Confirme que existe teste de integração provando que UPDATE e DE
+- **Summary**: E9 review: deferrable UNIQUE on request_item line numbers, role/level rule tests for all roles, stronger append-only trigger and TRUNCATE cleanup tests
+
+| File | Change | Additions | Removals |
+|---|---|---|---|
+| `backend/src/main/resources/db/migration/V1__schema.sql` | modified | +4 | -3 |
+| `backend/src/test/java/com/kingspan/purchase/SchemaMigrationIntegrationTest.java` | modified | +105 | -12 |
