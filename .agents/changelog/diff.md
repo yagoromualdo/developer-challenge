@@ -357,3 +357,15 @@ One block per agent turn, one row per changed file:
 | File | Change | Additions | Removals |
 |---|---|---|---|
 | `docs/insomnia/purchase-api.json` | modified | +10 | -7 |
+
+---
+### Turn 2026-11-15 12:49:05 -0300 · ClaudeCode
+- **Source**: command
+- **Session**: a11c083e-7ab8-405b-a174-598f8712bc3b
+- **Prompt**: <pasted_content id="a7b0"> Antes de commitar, confira quatro coisas: 1. Local permitido. Coloque em `backend/` (por exemplo, `backend/insomnia/kingspan-purchase.json`) ou em `docs/api/`. Na raiz não pode, porque fica fora dos caminhos permitidos pelo `AGENTS.md`. 2. Nenhum token salvo. Abra o arquivo e procure por `eyJ`, que é o começo de todo JWT. O token deve vir de uma variável de ambiente preenchida pela resposta do login (o Insomnia faz isso com response chaining), e não colado fixo. A
+- **Summary**: Move Insomnia collection to docs/api, remove hardcoded JWTs, add Local and Compose environments
+
+| File | Change | Additions | Removals |
+|---|---|---|---|
+| `docs/api/insomnia-collection.json` | created | +316 | -0 |
+| `docs/insomnia/purchase-api.json` | deleted | +0 | -315 |

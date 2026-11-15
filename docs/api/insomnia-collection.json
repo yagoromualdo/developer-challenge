@@ -1,0 +1,316 @@
+{
+  "_type": "export",
+  "__export_format": 4,
+  "__export_date": "2026-11-15T00:00:00.000Z",
+  "__export_source": "insomnia.desktop.app:v10",
+  "resources": [
+    {
+      "_id": "wrk_purchase",
+      "_type": "workspace",
+      "parentId": null,
+      "name": "Purchase API — testes manuais",
+      "scope": "collection",
+      "description": "Testes manuais da API de solicitações de compra (até a E11).\n\n## Preparação (uma vez)\n\n1. Suba o banco e o back-end:\n   - `docker compose up -d db`\n   - `cd backend && ./mvnw spring-boot:run`\n2. Crie um centro de custo (ainda não há `POST /cost-centers`; vem na E12):\n   ```\n   docker compose exec db psql -U purchase -d purchase -c \"INSERT INTO cost_center (code, name, created_at) VALUES ('CC-TI-01', 'Tecnologia', now()) RETURNING id;\"\n   ```\n   Se o id devolvido não for 1, ajuste `cost_center_id` no ambiente.\n3. Rode a pasta **02 Cadastro** de cima para baixo (cria Maria, João, Admin e Aprovador).\n4. Promova Admin e Aprovador (não existe endpoint de admin ainda):\n   ```\n   docker compose exec db psql -U purchase -d purchase -c \"UPDATE app_user SET role = 'ADMIN', cost_center_id = NULL WHERE email = 'admin@example.com'; UPDATE app_user SET role = 'APROVADOR', approver_level = 'NIVEL_2' WHERE email = 'aprovador@example.com';\"\n   ```\n5. Rode os logins da pasta **03 Login**. Um script pós-resposta (aba Scripts de cada login) grava o token em `token_maria`, `token_admin` ou `token_aprovador` no Base Environment. Como o token dura 15 min, refaça o login quando aparecer 401 inesperado.\n\nPara recomeçar do zero: `docker compose down -v` apaga o volume do banco.\n\n## Ambientes\n\n- **Local (back direto):** `base_url` = http://localhost:8080 (`./mvnw spring-boot:run`).\n- **Compose (via proxy do front):** `base_url` = http://localhost:4200/api, depois que o compose completo existir.\n\nNenhum token fica salvo no arquivo: os `token_*` começam vazios e são preenchidos pelos logins."
+    },
+    {
+      "_id": "env_base",
+      "_type": "environment",
+      "parentId": "wrk_purchase",
+      "name": "Base Environment",
+      "data": {
+        "base_url": "http://localhost:8080",
+        "cost_center_id": 1,
+        "senha": "Senha-Forte-123",
+        "token_maria": "",
+        "token_admin": "",
+        "token_aprovador": ""
+      }
+    },
+    {
+      "_id": "env_local",
+      "_type": "environment",
+      "parentId": "env_base",
+      "name": "Local (back direto)",
+      "data": { "base_url": "http://localhost:8080" },
+      "metaSortKey": 1
+    },
+    {
+      "_id": "env_compose",
+      "_type": "environment",
+      "parentId": "env_base",
+      "name": "Compose (via proxy do front)",
+      "data": { "base_url": "http://localhost:4200/api" },
+      "metaSortKey": 2
+    },
+
+    { "_id": "fld_infra", "_type": "request_group", "parentId": "wrk_purchase", "name": "01 Infraestrutura", "metaSortKey": 1, "description": "Rotas públicas, request id, 404 e 405 em Problem Details." },
+    { "_id": "fld_register", "_type": "request_group", "parentId": "wrk_purchase", "name": "02 Cadastro (/auth/register)", "metaSortKey": 2, "description": "Rode os quatro primeiros na ordem: eles criam os usuários usados no resto da coleção." },
+    { "_id": "fld_login", "_type": "request_group", "parentId": "wrk_purchase", "name": "03 Login (/auth/login)", "metaSortKey": 3, "description": "Os três primeiros alimentam token_maria, token_admin e token_aprovador." },
+    { "_id": "fld_me", "_type": "request_group", "parentId": "wrk_purchase", "name": "04 Sessão (/auth/me) e tokens inválidos", "metaSortKey": 4, "description": "Todo 401 deve vir em application/problem+json com code UNAUTHORIZED e header WWW-Authenticate: Bearer." },
+    { "_id": "fld_authz", "_type": "request_group", "parentId": "wrk_purchase", "name": "05 Autorização por papel (403)", "metaSortKey": 5, "description": "Rotas exclusivas de ADMIN já são barradas no SecurityFilterChain. Os endpoints em si chegam na E12, então para ADMIN a resposta hoje é 404 (e não 403)." },
+
+    {
+      "_id": "req_health", "_type": "request", "parentId": "fld_infra", "metaSortKey": 1,
+      "name": "Health (público)", "method": "GET", "url": "{{ _.base_url }}/health",
+      "headers": [], "authentication": {}, "body": {},
+      "description": "Esperado: 200, status UP e components.db UP, sem token."
+    },
+    {
+      "_id": "req_health_request_id", "_type": "request", "parentId": "fld_infra", "metaSortKey": 2,
+      "name": "Health com X-Request-Id próprio", "method": "GET", "url": "{{ _.base_url }}/health",
+      "headers": [{ "name": "X-Request-Id", "value": "meu-teste-123" }], "authentication": {}, "body": {},
+      "description": "Esperado: o header X-Request-Id da resposta volta igual a meu-teste-123. Sem o header, o back gera um UUID."
+    },
+    {
+      "_id": "req_api_docs", "_type": "request", "parentId": "fld_infra", "metaSortKey": 3,
+      "name": "OpenAPI (público)", "method": "GET", "url": "{{ _.base_url }}/v3/api-docs",
+      "headers": [], "authentication": {}, "body": {},
+      "description": "Esperado: 200, com components.securitySchemes.bearerAuth e os paths /auth/login, /auth/register e /auth/me. O Swagger UI fica em /swagger-ui/index.html (abra no navegador; tem o botão Authorize)."
+    },
+    {
+      "_id": "req_404_sem_token", "_type": "request", "parentId": "fld_infra", "metaSortKey": 4,
+      "name": "Rota inexistente sem token → 401", "method": "GET", "url": "{{ _.base_url }}/rota-inexistente",
+      "headers": [], "authentication": {}, "body": {},
+      "description": "Esperado: 401 UNAUTHORIZED. A autenticação é checada antes de descobrir se a rota existe (não revela o mapa da API)."
+    },
+    {
+      "_id": "req_404_com_token", "_type": "request", "parentId": "fld_infra", "metaSortKey": 5,
+      "name": "Rota inexistente com token → 404", "method": "GET", "url": "{{ _.base_url }}/rota-inexistente",
+      "headers": [], "authentication": { "type": "bearer", "token": "{{ _.token_maria }}" }, "body": {},
+      "description": "Esperado: 404 NOT_FOUND em problem+json."
+    },
+    {
+      "_id": "req_405", "_type": "request", "parentId": "fld_infra", "metaSortKey": 6,
+      "name": "GET em /auth/login com token → 405", "method": "GET", "url": "{{ _.base_url }}/auth/login",
+      "headers": [], "authentication": { "type": "bearer", "token": "{{ _.token_maria }}" }, "body": {},
+      "description": "Esperado: 405 METHOD_NOT_ALLOWED em problem+json. Sem token seria 401, porque só o POST é público."
+    },
+
+    {
+      "_id": "req_register_maria", "_type": "request", "parentId": "fld_register", "metaSortKey": 1,
+      "name": "Cadastrar Maria (SOLICITANTE) → 201", "method": "POST", "url": "{{ _.base_url }}/auth/register",
+      "headers": [{ "name": "Content-Type", "value": "application/json" }], "authentication": {},
+      "body": { "mimeType": "application/json", "text": "{\n  \"name\": \"Maria Solicitante\",\n  \"email\": \"maria@example.com\",\n  \"password\": \"{{ _.senha }}\",\n  \"costCenterId\": {{ _.cost_center_id }}\n}" },
+      "description": "Esperado: 201 com role SOLICITANTE, approverLevel null e nenhum campo de senha ou hash."
+    },
+    {
+      "_id": "req_register_joao_admin", "_type": "request", "parentId": "fld_register", "metaSortKey": 2,
+      "name": "Cadastrar pedindo role ADMIN → 201 como SOLICITANTE", "method": "POST", "url": "{{ _.base_url }}/auth/register",
+      "headers": [{ "name": "Content-Type", "value": "application/json" }], "authentication": {},
+      "body": { "mimeType": "application/json", "text": "{\n  \"name\": \"João Espertinho\",\n  \"email\": \"Joao@Example.com\",\n  \"password\": \"{{ _.senha }}\",\n  \"costCenterId\": {{ _.cost_center_id }},\n  \"role\": \"ADMIN\",\n  \"approverLevel\": \"NIVEL_2\"\n}" },
+      "description": "Esperado: 201 com role SOLICITANTE e approverLevel null (campos extras ignorados). O e-mail volta normalizado: joao@example.com."
+    },
+    {
+      "_id": "req_register_admin", "_type": "request", "parentId": "fld_register", "metaSortKey": 3,
+      "name": "Cadastrar futuro Admin → 201", "method": "POST", "url": "{{ _.base_url }}/auth/register",
+      "headers": [{ "name": "Content-Type", "value": "application/json" }], "authentication": {},
+      "body": { "mimeType": "application/json", "text": "{\n  \"name\": \"Ana Admin\",\n  \"email\": \"admin@example.com\",\n  \"password\": \"{{ _.senha }}\",\n  \"costCenterId\": {{ _.cost_center_id }}\n}" },
+      "description": "Nasce SOLICITANTE. Depois rode o UPDATE do passo 4 da preparação (descrição da coleção) para virar ADMIN global."
+    },
+    {
+      "_id": "req_register_aprovador", "_type": "request", "parentId": "fld_register", "metaSortKey": 4,
+      "name": "Cadastrar futuro Aprovador → 201", "method": "POST", "url": "{{ _.base_url }}/auth/register",
+      "headers": [{ "name": "Content-Type", "value": "application/json" }], "authentication": {},
+      "body": { "mimeType": "application/json", "text": "{\n  \"name\": \"Paulo Aprovador\",\n  \"email\": \"aprovador@example.com\",\n  \"password\": \"{{ _.senha }}\",\n  \"costCenterId\": {{ _.cost_center_id }}\n}" },
+      "description": "Nasce SOLICITANTE. Depois rode o UPDATE do passo 4 da preparação para virar APROVADOR NIVEL_2."
+    },
+    {
+      "_id": "req_register_duplicado", "_type": "request", "parentId": "fld_register", "metaSortKey": 5,
+      "name": "E-mail já cadastrado (maiúsculas) → 422", "method": "POST", "url": "{{ _.base_url }}/auth/register",
+      "headers": [{ "name": "Content-Type", "value": "application/json" }], "authentication": {},
+      "body": { "mimeType": "application/json", "text": "{\n  \"name\": \"Maria de Novo\",\n  \"email\": \"MARIA@example.com\",\n  \"password\": \"{{ _.senha }}\",\n  \"costCenterId\": {{ _.cost_center_id }}\n}" },
+      "description": "Esperado: 422 EMAIL_ALREADY_REGISTERED (a comparação ignora maiúsculas)."
+    },
+    {
+      "_id": "req_register_cc_inexistente", "_type": "request", "parentId": "fld_register", "metaSortKey": 6,
+      "name": "Centro de custo inexistente → 422", "method": "POST", "url": "{{ _.base_url }}/auth/register",
+      "headers": [{ "name": "Content-Type", "value": "application/json" }], "authentication": {},
+      "body": { "mimeType": "application/json", "text": "{\n  \"name\": \"Carla\",\n  \"email\": \"carla@example.com\",\n  \"password\": \"{{ _.senha }}\",\n  \"costCenterId\": 99999\n}" },
+      "description": "Esperado: 422 COST_CENTER_NOT_FOUND."
+    },
+    {
+      "_id": "req_register_invalido", "_type": "request", "parentId": "fld_register", "metaSortKey": 7,
+      "name": "Campos inválidos → 400 com errors[]", "method": "POST", "url": "{{ _.base_url }}/auth/register",
+      "headers": [{ "name": "Content-Type", "value": "application/json" }], "authentication": {},
+      "body": { "mimeType": "application/json", "text": "{\n  \"name\": \"\",\n  \"email\": \"nao-e-email\",\n  \"password\": \"curta12\",\n  \"costCenterId\": -1\n}" },
+      "description": "Esperado: 400 VALIDATION_FAILED com errors[] para costCenterId, email, name e password. A senha enviada (curta12) não aparece na resposta."
+    },
+    {
+      "_id": "req_register_senha_72", "_type": "request", "parentId": "fld_register", "metaSortKey": 8,
+      "name": "Senha acima de 72 bytes → 400", "method": "POST", "url": "{{ _.base_url }}/auth/register",
+      "headers": [{ "name": "Content-Type", "value": "application/json" }], "authentication": {},
+      "body": { "mimeType": "application/json", "text": "{\n  \"name\": \"Bruno\",\n  \"email\": \"bruno@example.com\",\n  \"password\": \"éééééééééééééééééééééééééééééééééééééééé\",\n  \"costCenterId\": {{ _.cost_center_id }}\n}" },
+      "description": "40 caracteres, mas 80 bytes em UTF-8 (limite do bcrypt é 72 bytes). Esperado: 400 com erro no campo password."
+    },
+    {
+      "_id": "req_register_json_malformado", "_type": "request", "parentId": "fld_register", "metaSortKey": 9,
+      "name": "JSON malformado → 400", "method": "POST", "url": "{{ _.base_url }}/auth/register",
+      "headers": [{ "name": "Content-Type", "value": "application/json" }], "authentication": {},
+      "body": { "mimeType": "application/json", "text": "{ \"name\": \"Maria\", " },
+      "description": "Esperado: 400 MALFORMED_REQUEST, sem detalhes internos do parser."
+    },
+
+    {
+      "_id": "req_login_maria", "_type": "request", "parentId": "fld_login", "metaSortKey": 1,
+      "name": "Login Maria (SOLICITANTE) → 200", "method": "POST", "url": "{{ _.base_url }}/auth/login",
+      "headers": [{ "name": "Content-Type", "value": "application/json" }], "authentication": {},
+      "body": { "mimeType": "application/json", "text": "{\n  \"email\": \"maria@example.com\",\n  \"password\": \"{{ _.senha }}\"\n}" },
+      "afterResponseScript": "const body = insomnia.response.json();\nif (body && body.accessToken) {\n  insomnia.baseEnvironment.set('token_maria', body.accessToken);\n}",
+      "description": "Esperado: 200 com accessToken, tokenType Bearer, expiresAt (+15 min) e user. O script pós-resposta grava o token em token_maria."
+    },
+    {
+      "_id": "req_login_admin", "_type": "request", "parentId": "fld_login", "metaSortKey": 2,
+      "name": "Login Admin → 200", "method": "POST", "url": "{{ _.base_url }}/auth/login",
+      "headers": [{ "name": "Content-Type", "value": "application/json" }], "authentication": {},
+      "body": { "mimeType": "application/json", "text": "{\n  \"email\": \"admin@example.com\",\n  \"password\": \"{{ _.senha }}\"\n}" },
+      "afterResponseScript": "const body = insomnia.response.json();\nif (body && body.accessToken) {\n  insomnia.baseEnvironment.set('token_admin', body.accessToken);\n}",
+      "description": "Depois do UPDATE do passo 4: user.role ADMIN e costCenterId null. O script pós-resposta grava o token em token_admin."
+    },
+    {
+      "_id": "req_login_aprovador", "_type": "request", "parentId": "fld_login", "metaSortKey": 3,
+      "name": "Login Aprovador → 200", "method": "POST", "url": "{{ _.base_url }}/auth/login",
+      "headers": [{ "name": "Content-Type", "value": "application/json" }], "authentication": {},
+      "body": { "mimeType": "application/json", "text": "{\n  \"email\": \"aprovador@example.com\",\n  \"password\": \"{{ _.senha }}\"\n}" },
+      "afterResponseScript": "const body = insomnia.response.json();\nif (body && body.accessToken) {\n  insomnia.baseEnvironment.set('token_aprovador', body.accessToken);\n}",
+      "description": "Depois do UPDATE do passo 4: user.role APROVADOR e approverLevel NIVEL_2. O script pós-resposta grava o token em token_aprovador."
+    },
+    {
+      "_id": "req_login_normalizado", "_type": "request", "parentId": "fld_login", "metaSortKey": 4,
+      "name": "E-mail com maiúsculas e espaços → 200", "method": "POST", "url": "{{ _.base_url }}/auth/login",
+      "headers": [{ "name": "Content-Type", "value": "application/json" }], "authentication": {},
+      "body": { "mimeType": "application/json", "text": "{\n  \"email\": \"  MARIA@Example.com \",\n  \"password\": \"{{ _.senha }}\"\n}" },
+      "description": "Esperado: 200. O e-mail é normalizado (trim + minúsculas) antes da busca."
+    },
+    {
+      "_id": "req_login_senha_errada", "_type": "request", "parentId": "fld_login", "metaSortKey": 5,
+      "name": "Senha errada → 401", "method": "POST", "url": "{{ _.base_url }}/auth/login",
+      "headers": [{ "name": "Content-Type", "value": "application/json" }], "authentication": {},
+      "body": { "mimeType": "application/json", "text": "{\n  \"email\": \"maria@example.com\",\n  \"password\": \"senha-errada\"\n}" },
+      "description": "Esperado: 401 INVALID_CREDENTIALS, detail \"E-mail ou senha inválidos.\""
+    },
+    {
+      "_id": "req_login_inexistente", "_type": "request", "parentId": "fld_login", "metaSortKey": 6,
+      "name": "E-mail inexistente → 401 (mesma mensagem)", "method": "POST", "url": "{{ _.base_url }}/auth/login",
+      "headers": [{ "name": "Content-Type", "value": "application/json" }], "authentication": {},
+      "body": { "mimeType": "application/json", "text": "{\n  \"email\": \"ninguem@example.com\",\n  \"password\": \"senha-errada\"\n}" },
+      "description": "Esperado: exatamente o mesmo title e detail da senha errada (não revela quais e-mails existem)."
+    },
+    {
+      "_id": "req_login_senha_72", "_type": "request", "parentId": "fld_login", "metaSortKey": 7,
+      "name": "Senha acima de 72 bytes → 401", "method": "POST", "url": "{{ _.base_url }}/auth/login",
+      "headers": [{ "name": "Content-Type", "value": "application/json" }], "authentication": {},
+      "body": { "mimeType": "application/json", "text": "{\n  \"email\": \"maria@example.com\",\n  \"password\": \"éééééééééééééééééééééééééééééééééééééééé\"\n}" },
+      "description": "Esperado: 401 INVALID_CREDENTIALS (e não 500 do bcrypt)."
+    },
+    {
+      "_id": "req_login_vazio", "_type": "request", "parentId": "fld_login", "metaSortKey": 8,
+      "name": "Campos vazios → 400", "method": "POST", "url": "{{ _.base_url }}/auth/login",
+      "headers": [{ "name": "Content-Type", "value": "application/json" }], "authentication": {},
+      "body": { "mimeType": "application/json", "text": "{\n  \"email\": \"\",\n  \"password\": \"\"\n}" },
+      "description": "Esperado: 400 VALIDATION_FAILED com errors[] para email e password."
+    },
+    {
+      "_id": "req_login_token_ruim", "_type": "request", "parentId": "fld_login", "metaSortKey": 9,
+      "name": "Login enviando Bearer inválido → 401", "method": "POST", "url": "{{ _.base_url }}/auth/login",
+      "headers": [{ "name": "Content-Type", "value": "application/json" }], "authentication": { "type": "bearer", "token": "nao-e-um-jwt" },
+      "body": { "mimeType": "application/json", "text": "{\n  \"email\": \"maria@example.com\",\n  \"password\": \"{{ _.senha }}\"\n}" },
+      "description": "Mesmo numa rota pública, um header Authorization com token inválido é rejeitado: 401 UNAUTHORIZED. Comportamento padrão do Resource Server; o front não deve mandar token no login."
+    },
+
+    {
+      "_id": "req_me_maria", "_type": "request", "parentId": "fld_me", "metaSortKey": 1,
+      "name": "Me (Maria) → 200", "method": "GET", "url": "{{ _.base_url }}/auth/me",
+      "headers": [], "authentication": { "type": "bearer", "token": "{{ _.token_maria }}" }, "body": {},
+      "description": "Esperado: 200 com id, name, email, role SOLICITANTE, approverLevel null, costCenterId. Sem senha nem hash."
+    },
+    {
+      "_id": "req_me_admin", "_type": "request", "parentId": "fld_me", "metaSortKey": 2,
+      "name": "Me (Admin) → 200", "method": "GET", "url": "{{ _.base_url }}/auth/me",
+      "headers": [], "authentication": { "type": "bearer", "token": "{{ _.token_admin }}" }, "body": {},
+      "description": "Esperado: role ADMIN e costCenterId null."
+    },
+    {
+      "_id": "req_me_aprovador", "_type": "request", "parentId": "fld_me", "metaSortKey": 3,
+      "name": "Me (Aprovador) → 200", "method": "GET", "url": "{{ _.base_url }}/auth/me",
+      "headers": [], "authentication": { "type": "bearer", "token": "{{ _.token_aprovador }}" }, "body": {},
+      "description": "Esperado: role APROVADOR e approverLevel NIVEL_2."
+    },
+    {
+      "_id": "req_me_sem_token", "_type": "request", "parentId": "fld_me", "metaSortKey": 4,
+      "name": "Sem token → 401", "method": "GET", "url": "{{ _.base_url }}/auth/me",
+      "headers": [], "authentication": {}, "body": {},
+      "description": "Esperado: 401 UNAUTHORIZED em application/problem+json, instance /auth/me, requestId e header WWW-Authenticate: Bearer."
+    },
+    {
+      "_id": "req_me_malformado", "_type": "request", "parentId": "fld_me", "metaSortKey": 5,
+      "name": "Token malformado → 401", "method": "GET", "url": "{{ _.base_url }}/auth/me",
+      "headers": [], "authentication": { "type": "bearer", "token": "nao-e-um-jwt" }, "body": {},
+      "description": "Esperado: 401 UNAUTHORIZED."
+    },
+    {
+      "_id": "req_me_adulterado", "_type": "request", "parentId": "fld_me", "metaSortKey": 6,
+      "name": "Token adulterado (assinatura quebrada) → 401", "method": "GET", "url": "{{ _.base_url }}/auth/me",
+      "headers": [], "authentication": { "type": "bearer", "token": "{{ _.token_maria }}x" }, "body": {},
+      "description": "O token válido da Maria com um caractere a mais no fim. Esperado: 401 UNAUTHORIZED."
+    },
+    {
+      "_id": "req_me_expirado", "_type": "request", "parentId": "fld_me", "metaSortKey": 7,
+      "name": "Token expirado → 401", "method": "GET", "url": "{{ _.base_url }}/auth/me",
+      "headers": [], "authentication": { "type": "bearer", "token": "{{ _.token_maria }}" }, "body": {},
+      "description": "Para testar a expiração com um token real: suba o back com TTL de 1 minuto (PowerShell: `$env:JWT_TTL_MINUTES=1; ./mvnw spring-boot:run`), rode Login Maria, espere uns 2 minutos e envie. O decoder tolera 60 s de diferença de relógio, por isso não basta 1 minuto. Esperado: 401 UNAUTHORIZED."
+    },
+    {
+      "_id": "req_me_basic", "_type": "request", "parentId": "fld_me", "metaSortKey": 8,
+      "name": "Authorization Basic → 401", "method": "GET", "url": "{{ _.base_url }}/auth/me",
+      "headers": [], "authentication": { "type": "basic", "username": "maria@example.com", "password": "{{ _.senha }}" }, "body": {},
+      "description": "HTTP Basic está desligado; só Bearer autentica. Esperado: 401 UNAUTHORIZED."
+    },
+
+    {
+      "_id": "req_authz_users_get_solicitante", "_type": "request", "parentId": "fld_authz", "metaSortKey": 1,
+      "name": "SOLICITANTE lista usuários → 403", "method": "GET", "url": "{{ _.base_url }}/users",
+      "headers": [], "authentication": { "type": "bearer", "token": "{{ _.token_maria }}" }, "body": {},
+      "description": "Esperado: 403 ACCESS_DENIED em application/problem+json, detail \"Seu papel não permite executar esta ação.\""
+    },
+    {
+      "_id": "req_authz_users_post_solicitante", "_type": "request", "parentId": "fld_authz", "metaSortKey": 2,
+      "name": "SOLICITANTE cria usuário → 403", "method": "POST", "url": "{{ _.base_url }}/users",
+      "headers": [{ "name": "Content-Type", "value": "application/json" }], "authentication": { "type": "bearer", "token": "{{ _.token_maria }}" },
+      "body": { "mimeType": "application/json", "text": "{\n  \"name\": \"Novo\",\n  \"email\": \"novo@example.com\",\n  \"role\": \"ADMIN\"\n}" },
+      "description": "Esperado: 403 ACCESS_DENIED (barrado antes de ler o corpo)."
+    },
+    {
+      "_id": "req_authz_users_patch_aprovador", "_type": "request", "parentId": "fld_authz", "metaSortKey": 3,
+      "name": "APROVADOR edita usuário → 403", "method": "PATCH", "url": "{{ _.base_url }}/users/1",
+      "headers": [{ "name": "Content-Type", "value": "application/json" }], "authentication": { "type": "bearer", "token": "{{ _.token_aprovador }}" },
+      "body": { "mimeType": "application/json", "text": "{\n  \"role\": \"ADMIN\"\n}" },
+      "description": "Esperado: 403 ACCESS_DENIED. Aprovador também não gerencia usuários."
+    },
+    {
+      "_id": "req_authz_cc_post_solicitante", "_type": "request", "parentId": "fld_authz", "metaSortKey": 4,
+      "name": "SOLICITANTE cria centro de custo → 403", "method": "POST", "url": "{{ _.base_url }}/cost-centers",
+      "headers": [{ "name": "Content-Type", "value": "application/json" }], "authentication": { "type": "bearer", "token": "{{ _.token_maria }}" },
+      "body": { "mimeType": "application/json", "text": "{\n  \"code\": \"CC-FIN-01\",\n  \"name\": \"Financeiro\"\n}" },
+      "description": "Esperado: 403 ACCESS_DENIED."
+    },
+    {
+      "_id": "req_authz_budget_put_aprovador", "_type": "request", "parentId": "fld_authz", "metaSortKey": 5,
+      "name": "APROVADOR define orçamento → 403", "method": "PUT", "url": "{{ _.base_url }}/cost-centers/{{ _.cost_center_id }}/budgets/2026-11",
+      "headers": [{ "name": "Content-Type", "value": "application/json" }], "authentication": { "type": "bearer", "token": "{{ _.token_aprovador }}" },
+      "body": { "mimeType": "application/json", "text": "{\n  \"amount\": \"50000.00\"\n}" },
+      "description": "Esperado: 403 ACCESS_DENIED."
+    },
+    {
+      "_id": "req_authz_cc_get_solicitante", "_type": "request", "parentId": "fld_authz", "metaSortKey": 6,
+      "name": "SOLICITANTE lista centros de custo → 404 (não é 403)", "method": "GET", "url": "{{ _.base_url }}/cost-centers",
+      "headers": [], "authentication": { "type": "bearer", "token": "{{ _.token_maria }}" }, "body": {},
+      "description": "GET /cost-centers não é exclusivo de ADMIN, então passa pela segurança. Hoje dá 404 porque o endpoint só chega na E12."
+    },
+    {
+      "_id": "req_authz_users_get_admin", "_type": "request", "parentId": "fld_authz", "metaSortKey": 7,
+      "name": "ADMIN lista usuários → 404 (não é 403)", "method": "GET", "url": "{{ _.base_url }}/users",
+      "headers": [], "authentication": { "type": "bearer", "token": "{{ _.token_admin }}" }, "body": {},
+      "description": "Prova que o ADMIN passa pela regra do SecurityFilterChain. Hoje dá 404 porque o endpoint só chega na E12; depois dela, 200."
+    }
+  ]
+}
