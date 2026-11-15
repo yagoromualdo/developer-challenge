@@ -52,6 +52,13 @@ public class GlobalExceptionHandler extends ResponseEntityExceptionHandler {
         return handleExceptionInternal(ex, problem, new HttpHeaders(), UNPROCESSABLE, request);
     }
 
+    @ExceptionHandler(InvalidInputException.class)
+    ResponseEntity<Object> handleInvalidInput(InvalidInputException ex, WebRequest request) {
+        List<FieldViolation> violations = new ArrayList<>();
+        violations.add(ex.violation());
+        return validationProblem(ex, violations, new HttpHeaders(), HttpStatus.BAD_REQUEST, request);
+    }
+
     @ExceptionHandler(ResourceNotFoundException.class)
     ResponseEntity<Object> handleNotFound(ResourceNotFoundException ex, WebRequest request) {
         ProblemDetail problem =

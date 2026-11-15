@@ -12,24 +12,34 @@ import com.kingspan.purchase.request.infra.RequestEventEntity;
 import com.kingspan.purchase.request.infra.RequestEventRepository;
 import com.kingspan.purchase.request.infra.RequestItemEntity;
 import com.kingspan.purchase.request.infra.RequestSnapshotMapper;
+import com.kingspan.purchase.request.infra.RequestSpecifications;
 import com.kingspan.purchase.request.infra.RequestVersionEntity;
 import com.kingspan.purchase.request.infra.RequestVisibility;
 import com.kingspan.purchase.shared.domain.Actor;
+import com.kingspan.purchase.shared.domain.BusinessTime;
 import com.kingspan.purchase.shared.error.BusinessRuleException;
 import com.kingspan.purchase.shared.error.ErrorCode;
 import com.kingspan.purchase.shared.error.ResourceNotFoundException;
 import com.kingspan.purchase.shared.web.RequestId;
 import java.time.Clock;
 import java.time.Instant;
+import java.time.LocalDate;
+import java.util.ArrayList;
 import java.util.List;
+import java.util.Map;
+import java.util.function.Function;
+import java.util.stream.Collectors;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.dao.OptimisticLockingFailureException;
+import org.springframework.data.domain.Page;
+import org.springframework.data.domain.PageRequest;
+import org.springframework.data.jpa.domain.Specification;
 import org.springframework.security.access.AccessDeniedException;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
-/** Criação, edição e detalhe; as verificações seguem a ordem do README 4.3: 404 → 403 → 409 → 422. */
+/** Criação, edição, detalhe e listagem; as verificações seguem a ordem do README 4.3: 404 → 403 → 409 → 422. */
 @Service
 public class PurchaseRequestService {
 
@@ -111,6 +121,47 @@ public class PurchaseRequestService {
     @Transactional(readOnly = true)
     public RequestDetailView get(Actor actor, Long requestId) {
         return detail(actor, findVisible(actor, requestId));
+    }
+
+    /** Listagem dentro da visibilidade do ator: quem filtra por um centro de custo que não vê recebe página vazia. */
+    @Transactional(readOnly = true)
+    public Page<RequestSummaryView> list(Actor actor, RequestFilter filter, RequestSort sort, int page, int size) {
+        Specification<PurchaseRequestEntity> spec = RequestVisibility.visibleTo(actor)
+                .and(filtersOf(filter))
+                .and(RequestSpecifications.orderedBy(sort.field(), sort.direction()));
+        Page<PurchaseRequestEntity> found = requests.findAll(spec, PageRequest.of(page, size));
+        List<Long> ids = found.map(PurchaseRequestEntity::getId).getContent();
+        Map<Long, RequestVersionEntity> currentVersions = ids.isEmpty()
+                ? Map.of()
+                : requests.findCurrentVersions(ids).stream()
+                        .collect(
+                                Collectors.toMap(version -> version.getRequest().getId(), Function.identity()));
+        return found.map(request -> RequestSummaryView.from(request, currentVersions.get(request.getId())));
+    }
+
+    private static Specification<PurchaseRequestEntity> filtersOf(RequestFilter filter) {
+        List<Specification<PurchaseRequestEntity>> specs = new ArrayList<>();
+        if (!filter.statuses().isEmpty()) {
+            specs.add(RequestSpecifications.statusIn(filter.statuses()));
+        }
+        if (!filter.categories().isEmpty()) {
+            specs.add(RequestSpecifications.categoryIn(filter.categories()));
+        }
+        if (filter.costCenterId() != null) {
+            specs.add(RequestSpecifications.inCostCenter(filter.costCenterId()));
+        }
+        if (filter.createdFrom() != null) {
+            specs.add(RequestSpecifications.createdAtOrAfter(startOfDay(filter.createdFrom())));
+        }
+        if (filter.createdTo() != null) {
+            specs.add(RequestSpecifications.createdBefore(
+                    startOfDay(filter.createdTo().plusDays(1))));
+        }
+        return Specification.allOf(specs);
+    }
+
+    private static Instant startOfDay(LocalDate day) {
+        return day.atStartOfDay(BusinessTime.ZONE).toInstant();
     }
 
     // Mesma mensagem para inexistente e fora da visibilidade: o 404 não revela que a solicitação existe (ADR 003).

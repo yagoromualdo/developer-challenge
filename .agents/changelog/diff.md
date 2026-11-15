@@ -473,3 +473,26 @@ One block per agent turn, one row per changed file:
 | `backend/src/test/java/com/kingspan/purchase/request/application/IdempotencyServiceIntegrationTest.java` | created | +133 | -0 |
 | `backend/src/test/java/com/kingspan/purchase/request/web/PurchaseRequestIdempotencyIntegrationTest.java` | created | +273 | -0 |
 | `backend/src/test/java/com/kingspan/purchase/support/ApiClient.java` | modified | +10 | -5 |
+
+---
+### Turn 2026-11-15 15:12:01 -0300 · ClaudeCode
+- **Source**: command
+- **Session**: 2d48c403-bc06-443d-8efc-dd80f9f9da88
+- **Prompt**: Execute a etapa E15 do docs/plano-execucao.md. Ordenação por campo fora da whitelist deve retornar 400, e a resposta deve seguir exatamente o formato de paginação do README.
+- **Summary**: E15: paginated GET /requests with visibility, filters, sort whitelist (400) and README page format, plus integration tests
+
+| File | Change | Additions | Removals |
+|---|---|---|---|
+| `backend/src/main/java/com/kingspan/purchase/request/application/PurchaseRequestService.java` | modified | +52 | -1 |
+| `backend/src/main/java/com/kingspan/purchase/request/application/RequestFilter.java` | created | +33 | -0 |
+| `backend/src/main/java/com/kingspan/purchase/request/application/RequestSort.java` | created | +46 | -0 |
+| `backend/src/main/java/com/kingspan/purchase/request/application/RequestSummaryView.java` | created | +41 | -0 |
+| `backend/src/main/java/com/kingspan/purchase/request/infra/PurchaseRequestRepository.java` | modified | +12 | -1 |
+| `backend/src/main/java/com/kingspan/purchase/request/infra/RequestSortField.java` | created | +29 | -0 |
+| `backend/src/main/java/com/kingspan/purchase/request/infra/RequestSpecifications.java` | created | +92 | -0 |
+| `backend/src/main/java/com/kingspan/purchase/request/web/PurchaseRequestController.java` | modified | +30 | -0 |
+| `backend/src/main/java/com/kingspan/purchase/request/web/PurchaseRequestSummaryResponse.java` | created | +39 | -0 |
+| `backend/src/main/java/com/kingspan/purchase/shared/error/GlobalExceptionHandler.java` | modified | +7 | -0 |
+| `backend/src/main/java/com/kingspan/purchase/shared/error/InvalidInputException.java` | created | +16 | -0 |
+| `backend/src/main/java/com/kingspan/purchase/shared/web/PageResponse.java` | created | +22 | -0 |
+| `backend/src/test/java/com/kingspan/purchase/request/web/PurchaseRequestListIntegrationTest.java` | created | +392 | -0 |

@@ -3,10 +3,20 @@ package com.kingspan.purchase.request.web;
 import com.kingspan.purchase.request.application.IdempotencyService;
 import com.kingspan.purchase.request.application.IdempotentResponse;
 import com.kingspan.purchase.request.application.PurchaseRequestService;
+import com.kingspan.purchase.request.application.RequestFilter;
+import com.kingspan.purchase.request.application.RequestSort;
+import com.kingspan.purchase.request.domain.Category;
+import com.kingspan.purchase.request.domain.RequestStatus;
 import com.kingspan.purchase.shared.domain.Actor;
+import com.kingspan.purchase.shared.web.PageResponse;
 import jakarta.validation.Valid;
+import jakarta.validation.constraints.Max;
+import jakarta.validation.constraints.Min;
 import jakarta.validation.constraints.Pattern;
 import java.net.URI;
+import java.time.LocalDate;
+import java.util.Set;
+import org.springframework.format.annotation.DateTimeFormat;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.GetMapping;
@@ -16,6 +26,7 @@ import org.springframework.web.bind.annotation.PutMapping;
 import org.springframework.web.bind.annotation.RequestBody;
 import org.springframework.web.bind.annotation.RequestHeader;
 import org.springframework.web.bind.annotation.RequestMapping;
+import org.springframework.web.bind.annotation.RequestParam;
 import org.springframework.web.bind.annotation.RestController;
 import tools.jackson.databind.json.JsonMapper;
 
@@ -26,6 +37,7 @@ class PurchaseRequestController {
 
     static final String IDEMPOTENCY_KEY = "Idempotency-Key";
     static final String IDEMPOTENT_REPLAYED = "Idempotent-Replayed";
+    static final int MAX_PAGE_SIZE = 100;
 
     private final PurchaseRequestService requestService;
     private final IdempotencyService idempotency;
@@ -56,6 +68,24 @@ class PurchaseRequestController {
                         HttpStatus.CREATED.value(), json.writeValueAsString(createNow(actor, request))));
         return created(
                 result.status(), json.readValue(result.body(), PurchaseRequestResponse.class), result.replayed());
+    }
+
+    /** {@code status} e {@code category} aceitam vários valores ({@code status=APPROVED,REJECTED} ou repetidos). */
+    @GetMapping
+    PageResponse<PurchaseRequestSummaryResponse> list(
+            Actor actor,
+            @RequestParam(defaultValue = "0") @Min(0) int page,
+            @RequestParam(defaultValue = "20") @Min(1) @Max(MAX_PAGE_SIZE) int size,
+            @RequestParam(defaultValue = RequestSort.DEFAULT) String sort,
+            @RequestParam(required = false) Set<RequestStatus> status,
+            @RequestParam(required = false) Set<Category> category,
+            @RequestParam(required = false) Long costCenterId,
+            @RequestParam(required = false) @DateTimeFormat(iso = DateTimeFormat.ISO.DATE) LocalDate createdFrom,
+            @RequestParam(required = false) @DateTimeFormat(iso = DateTimeFormat.ISO.DATE) LocalDate createdTo) {
+        RequestFilter filter = new RequestFilter(status, category, costCenterId, createdFrom, createdTo);
+        return PageResponse.from(
+                requestService.list(actor, filter, RequestSort.parse(sort), page, size),
+                PurchaseRequestSummaryResponse::from);
     }
 
     @GetMapping("/{id}")
