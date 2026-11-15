@@ -30,6 +30,7 @@ O plano de execução está em `docs/plano-execucao.md`. Trabalhe **somente na e
 5. Antes de encerrar o turno, rode `bash .agents/hooks/ai-log.sh record ClaudeCode "<one-line summary in English>"` (exigido pelo `AGENTS.md`; as entradas do registro são **sempre em inglês**).
 6. **Não execute** `git commit`, `git push`, `git rebase`, `git reset` nem qualquer comando que altere o histórico. **O usuário commita manualmente.**
 7. Se a etapa for grande, proponha dividi-la em mais de um commit coerente.
+8. A collection do Insomnia em `docs/api/` só deve ser alterada quando o usuário pedir explicitamente. Não a atualize como parte das etapas.
 
 ## 3. Stack e versões
 

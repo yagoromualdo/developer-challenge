@@ -407,3 +407,14 @@ One block per agent turn, one row per changed file:
 | `backend/src/test/java/com/kingspan/purchase/user/web/AuthIntegrationTest.java` | modified | +4 | -2 |
 | `backend/src/test/java/com/kingspan/purchase/user/web/UserAdminIntegrationTest.java` | created | +270 | -0 |
 | `docs/api/insomnia-collection.json` | modified | +146 | -8 |
+
+---
+### Turn 2026-11-15 13:51:27 -0300 · ClaudeCode
+- **Source**: command
+- **Session**: b503fa03-4344-40c8-ac3d-d260e62785bf
+- **Prompt**: Adicione ao claude.md do back: - A collection do Insomnia em `\docs\api` só deve ser alterada quando o usuário pedir explicitamente. Não a atualize como parte das etapas.
+- **Summary**: Add rule to backend/CLAUDE.md: Insomnia collection changes only on explicit user request
+
+| File | Change | Additions | Removals |
+|---|---|---|---|
+| `backend/CLAUDE.md` | modified | +1 | -0 |
