@@ -11,7 +11,11 @@ import java.math.RoundingMode;
 import java.text.DecimalFormat;
 import java.text.DecimalFormatSymbols;
 import java.time.YearMonth;
+import java.util.List;
 import java.util.Locale;
+import java.util.Map;
+import java.util.function.Function;
+import java.util.stream.Collectors;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.stereotype.Service;
@@ -36,6 +40,20 @@ public class BudgetService {
     public BudgetView get(Long costCenterId, YearMonth month) {
         requireExistingCostCenter(costCenterId);
         return find(costCenterId, month);
+    }
+
+    /** Orçamentos de um mês numa só consulta, na ordem de {@code costCenterIds}; mês sem orçamento sai zerado. */
+    @Transactional(readOnly = true)
+    public List<BudgetView> list(List<Long> costCenterIds, YearMonth month) {
+        if (costCenterIds.isEmpty()) {
+            return List.of();
+        }
+        Map<Long, BudgetView> defined = budgets.findByMonthAndCostCenterIdIn(month, costCenterIds).stream()
+                .map(BudgetService::toView)
+                .collect(Collectors.toMap(BudgetView::costCenterId, Function.identity()));
+        return costCenterIds.stream()
+                .map(id -> defined.getOrDefault(id, new BudgetView(id, month, ZERO, ZERO)))
+                .toList();
     }
 
     /**

@@ -27,6 +27,7 @@ import java.time.Clock;
 import java.time.Instant;
 import java.time.LocalDate;
 import java.util.ArrayList;
+import java.util.EnumMap;
 import java.util.List;
 import java.util.Map;
 import java.util.function.Function;
@@ -214,6 +215,17 @@ public class PurchaseRequestService {
                         .collect(
                                 Collectors.toMap(version -> version.getRequest().getId(), Function.identity()));
         return found.map(request -> RequestSummaryView.from(request, currentVersions.get(request.getId())));
+    }
+
+    /** Totais do dashboard na mesma visibilidade da listagem; todo status aparece, com zero quando não há nenhuma. */
+    @Transactional(readOnly = true)
+    public Map<RequestStatus, Long> countByStatus(Actor actor) {
+        Map<RequestStatus, Long> counts = new EnumMap<>(RequestStatus.class);
+        for (RequestStatus status : RequestStatus.values()) {
+            counts.put(status, 0L);
+        }
+        counts.putAll(requests.countByStatus(RequestVisibility.visibleTo(actor)));
+        return counts;
     }
 
     private static Specification<PurchaseRequestEntity> filtersOf(RequestFilter filter) {

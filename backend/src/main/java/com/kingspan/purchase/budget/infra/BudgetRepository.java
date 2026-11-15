@@ -3,6 +3,8 @@ package com.kingspan.purchase.budget.infra;
 import java.math.BigDecimal;
 import java.time.LocalDate;
 import java.time.YearMonth;
+import java.util.Collection;
+import java.util.List;
 import java.util.Objects;
 import java.util.Optional;
 import org.springframework.data.jpa.repository.JpaRepository;
@@ -15,6 +17,12 @@ public interface BudgetRepository extends JpaRepository<BudgetEntity, Long> {
 
     default Optional<BudgetEntity> findByCostCenterIdAndMonth(Long costCenterId, YearMonth month) {
         return findByCostCenterIdAndMonth(costCenterId, month.atDay(1));
+    }
+
+    List<BudgetEntity> findByMonthAndCostCenterIdIn(LocalDate month, Collection<Long> costCenterIds);
+
+    default List<BudgetEntity> findByMonthAndCostCenterIdIn(YearMonth month, Collection<Long> costCenterIds) {
+        return findByMonthAndCostCenterIdIn(month.atDay(1), costCenterIds);
     }
 
     /**

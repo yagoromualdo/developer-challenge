@@ -609,3 +609,25 @@ One block per agent turn, one row per changed file:
 | `backend/src/main/java/com/kingspan/purchase/request/web/RequestEventResponse.java` | created | +41 | -0 |
 | `backend/src/test/java/com/kingspan/purchase/request/web/ApprovalInboxIntegrationTest.java` | created | +261 | -0 |
 | `backend/src/test/java/com/kingspan/purchase/request/web/RequestHistoryIntegrationTest.java` | created | +261 | -0 |
+
+---
+### Turn 2026-11-15 17:25:14 -0300 · ClaudeCode
+- **Source**: command
+- **Session**: 86601d71-a02d-40b0-a1ec-63fd5eefe73b
+- **Prompt**: Execute a etapa E21 do docs/plano-execucao.md.
+- **Summary**: Add GET /dashboard/summary with status totals in visibility scope and current-month budget per cost center, plus integration tests
+
+| File | Change | Additions | Removals |
+|---|---|---|---|
+| `backend/src/main/java/com/kingspan/purchase/budget/application/BudgetService.java` | modified | +18 | -0 |
+| `backend/src/main/java/com/kingspan/purchase/budget/infra/BudgetRepository.java` | modified | +8 | -0 |
+| `backend/src/main/java/com/kingspan/purchase/dashboard/application/CostCenterBudgetView.java` | created | +6 | -0 |
+| `backend/src/main/java/com/kingspan/purchase/dashboard/application/DashboardService.java` | created | +65 | -0 |
+| `backend/src/main/java/com/kingspan/purchase/dashboard/application/DashboardSummaryView.java` | created | +22 | -0 |
+| `backend/src/main/java/com/kingspan/purchase/dashboard/web/DashboardController.java` | created | +24 | -0 |
+| `backend/src/main/java/com/kingspan/purchase/dashboard/web/DashboardSummaryResponse.java` | created | +43 | -0 |
+| `backend/src/main/java/com/kingspan/purchase/request/application/PurchaseRequestService.java` | modified | +12 | -0 |
+| `backend/src/main/java/com/kingspan/purchase/request/infra/PurchaseRequestRepository.java` | modified | +2 | -1 |
+| `backend/src/main/java/com/kingspan/purchase/request/infra/RequestStatusCountQuery.java` | created | +12 | -0 |
+| `backend/src/main/java/com/kingspan/purchase/request/infra/RequestStatusCountQueryImpl.java` | created | +42 | -0 |
+| `backend/src/test/java/com/kingspan/purchase/dashboard/web/DashboardIntegrationTest.java` | created | +253 | -0 |

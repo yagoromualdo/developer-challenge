@@ -10,7 +10,8 @@ import org.springframework.data.jpa.repository.Query;
 public interface PurchaseRequestRepository
         extends JpaRepository<PurchaseRequestEntity, Long>,
                 JpaSpecificationExecutor<PurchaseRequestEntity>,
-                RequestIdQuery {
+                RequestIdQuery,
+                RequestStatusCountQuery {
 
     /** Versões atuais de uma página da listagem numa só consulta, sem carregar as coleções uma a uma (N+1). */
     @Query("""
