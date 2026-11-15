@@ -269,3 +269,33 @@ One block per agent turn, one row per changed file:
 |---|---|---|---|
 | `backend/src/main/resources/db/migration/V1__schema.sql` | modified | +4 | -3 |
 | `backend/src/test/java/com/kingspan/purchase/SchemaMigrationIntegrationTest.java` | modified | +105 | -12 |
+
+---
+### Turn 2026-11-14 22:46:04 -0300 · ClaudeCode
+- **Source**: command
+- **Session**: f77951f0-443d-4636-bf81-c39fd997fc1c
+- **Prompt**: Execute a etapa E10 do docs/plano-execucao.md. O mapeamento entidade → domínio deve produzir o RequestSnapshot e os ApprovalStep da E8 (só as etapas da versão atual), sem duplicar regras na camada infra. O consumo de orçamento deve ser um UPDATE condicional atômico (sem SELECT FOR UPDATE), com teste de integração cobrindo: consome quando cabe, 0 linhas quando não cabe e 0 linhas quando o mês não tem orçamento.
+- **Summary**: E10: JPA entities, repositories, entity-to-domain snapshot mapper and atomic conditional budget UPDATE with integration tests
+
+| File | Change | Additions | Removals |
+|---|---|---|---|
+| `backend/src/main/java/com/kingspan/purchase/budget/infra/BudgetEntity.java` | created | +67 | -0 |
+| `backend/src/main/java/com/kingspan/purchase/budget/infra/BudgetRepository.java` | created | +48 | -0 |
+| `backend/src/main/java/com/kingspan/purchase/costcenter/infra/CostCenterEntity.java` | created | +52 | -0 |
+| `backend/src/main/java/com/kingspan/purchase/costcenter/infra/CostCenterRepository.java` | created | +8 | -0 |
+| `backend/src/main/java/com/kingspan/purchase/request/domain/HistoryAction.java` | created | +12 | -0 |
+| `backend/src/main/java/com/kingspan/purchase/request/infra/ApprovalStepEntity.java` | created | +100 | -0 |
+| `backend/src/main/java/com/kingspan/purchase/request/infra/IdempotencyKeyEntity.java` | created | +91 | -0 |
+| `backend/src/main/java/com/kingspan/purchase/request/infra/IdempotencyKeyRepository.java` | created | +9 | -0 |
+| `backend/src/main/java/com/kingspan/purchase/request/infra/PurchaseRequestEntity.java` | created | +139 | -0 |
+| `backend/src/main/java/com/kingspan/purchase/request/infra/PurchaseRequestRepository.java` | created | +5 | -0 |
+| `backend/src/main/java/com/kingspan/purchase/request/infra/RequestEventEntity.java` | created | +141 | -0 |
+| `backend/src/main/java/com/kingspan/purchase/request/infra/RequestEventRepository.java` | created | +10 | -0 |
+| `backend/src/main/java/com/kingspan/purchase/request/infra/RequestItemEntity.java` | created | +75 | -0 |
+| `backend/src/main/java/com/kingspan/purchase/request/infra/RequestSnapshotMapper.java` | created | +26 | -0 |
+| `backend/src/main/java/com/kingspan/purchase/request/infra/RequestVersionEntity.java` | created | +189 | -0 |
+| `backend/src/main/java/com/kingspan/purchase/user/infra/UserEntity.java` | created | +106 | -0 |
+| `backend/src/main/java/com/kingspan/purchase/user/infra/UserRepository.java` | created | +12 | -0 |
+| `backend/src/test/java/com/kingspan/purchase/budget/infra/BudgetRepositoryIntegrationTest.java` | created | +143 | -0 |
+| `backend/src/test/java/com/kingspan/purchase/request/infra/PurchaseRequestPersistenceIntegrationTest.java` | created | +255 | -0 |
+| `backend/src/test/java/com/kingspan/purchase/support/DatabaseCleaner.java` | created | +25 | -0 |
