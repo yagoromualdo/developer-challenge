@@ -496,3 +496,24 @@ One block per agent turn, one row per changed file:
 | `backend/src/main/java/com/kingspan/purchase/shared/error/InvalidInputException.java` | created | +16 | -0 |
 | `backend/src/main/java/com/kingspan/purchase/shared/web/PageResponse.java` | created | +22 | -0 |
 | `backend/src/test/java/com/kingspan/purchase/request/web/PurchaseRequestListIntegrationTest.java` | created | +392 | -0 |
+
+---
+### Turn 2026-11-15 15:25:19 -0300 · ClaudeCode
+- **Source**: command
+- **Session**: 601d7236-5dad-4e08-8628-afb6b1588c2e
+- **Prompt**: Execute a etapa E16 do docs/plano-execucao.md. O mês de competência é calculado no submit usando o Clock injetado no fuso America/Sao_Paulo e gravado na versão. Submit e cancel seguem a ordem 404 → 403 (ActionPolicy.roleAllows) → 409 (lockVersion) → 422 (ActionPolicy.check), reaproveitando o NOT_REQUEST_OWNER da E8.
+- **Summary**: E16: implement submit (chain, competence month via Clock in Sao Paulo) and cancel endpoints with 404/403/409/422 order and tests
+
+| File | Change | Additions | Removals |
+|---|---|---|---|
+| `backend/src/main/java/com/kingspan/purchase/request/application/PurchaseRequestService.java` | modified | +91 | -10 |
+| `backend/src/main/java/com/kingspan/purchase/request/application/RequestPolicyConfig.java` | modified | +6 | -0 |
+| `backend/src/main/java/com/kingspan/purchase/request/domain/RequestStateMachine.java` | modified | +8 | -0 |
+| `backend/src/main/java/com/kingspan/purchase/request/infra/RequestVersionEntity.java` | modified | +8 | -0 |
+| `backend/src/main/java/com/kingspan/purchase/request/web/CancelPurchaseRequestRequest.java` | created | +16 | -0 |
+| `backend/src/main/java/com/kingspan/purchase/request/web/PurchaseRequestController.java` | modified | +12 | -0 |
+| `backend/src/main/java/com/kingspan/purchase/request/web/SubmitPurchaseRequestRequest.java` | created | +9 | -0 |
+| `backend/src/main/java/com/kingspan/purchase/shared/domain/BusinessTime.java` | modified | +9 | -0 |
+| `backend/src/test/java/com/kingspan/purchase/request/domain/RequestStateMachineTest.java` | modified | +30 | -0 |
+| `backend/src/test/java/com/kingspan/purchase/request/web/PurchaseRequestSubmitCancelIntegrationTest.java` | created | +419 | -0 |
+| `backend/src/test/java/com/kingspan/purchase/shared/domain/BusinessTimeTest.java` | created | +22 | -0 |

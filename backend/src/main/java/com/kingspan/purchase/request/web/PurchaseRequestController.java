@@ -99,6 +99,18 @@ class PurchaseRequestController {
         return PurchaseRequestResponse.from(requestService.edit(actor, id, request.lockVersion(), request.toDraft()));
     }
 
+    @PostMapping("/{id}/submit")
+    PurchaseRequestResponse submit(
+            Actor actor, @PathVariable Long id, @Valid @RequestBody SubmitPurchaseRequestRequest request) {
+        return PurchaseRequestResponse.from(requestService.submit(actor, id, request.lockVersion()));
+    }
+
+    @PostMapping("/{id}/cancel")
+    PurchaseRequestResponse cancel(
+            Actor actor, @PathVariable Long id, @Valid @RequestBody CancelPurchaseRequestRequest request) {
+        return PurchaseRequestResponse.from(requestService.cancel(actor, id, request.lockVersion(), request.comment()));
+    }
+
     private PurchaseRequestResponse createNow(Actor actor, CreatePurchaseRequestRequest request) {
         return PurchaseRequestResponse.from(requestService.create(actor, request.costCenterId(), request.toDraft()));
     }

@@ -131,6 +131,36 @@ class RequestStateMachineTest {
         assertThat(RequestStateMachine.actionsFrom(status)).containsExactlyInAnyOrderElementsOf(expected);
     }
 
+    @ParameterizedTest(name = "{0} + {1} -> {2}")
+    @CsvSource({
+        "DRAFT, SUBMIT, PENDING_APPROVAL",
+        "CHANGES_REQUESTED, SUBMIT, PENDING_APPROVAL",
+        "DRAFT, CANCEL, CANCELLED",
+        "PENDING_APPROVAL, CANCEL, CANCELLED",
+        "PENDING_APPROVAL, REJECT, REJECTED"
+    })
+    void deveResolverODestinoSemPosicaoDeEtapaParaAcoesQueNaoSaoAprovacao(
+            RequestStatus from, RequestAction action, RequestStatus expected) {
+        assertThat(RequestStateMachine.next(from, action)).isEqualTo(expected);
+    }
+
+    @Test
+    void deveExigirAPosicaoDaEtapaParaAprovar() {
+        assertThatThrownBy(() -> RequestStateMachine.next(RequestStatus.PENDING_APPROVAL, RequestAction.APPROVE))
+                .isInstanceOf(IllegalArgumentException.class);
+    }
+
+    @ParameterizedTest(name = "{0}")
+    @EnumSource(
+            value = RequestStatus.class,
+            names = {"APPROVED", "REJECTED", "CANCELLED"})
+    void deveRejeitarCancelamentoEmEstadoFinalSemPosicaoDeEtapa(RequestStatus status) {
+        assertThatThrownBy(() -> RequestStateMachine.next(status, RequestAction.CANCEL))
+                .isInstanceOfSatisfying(
+                        BusinessRuleException.class,
+                        ex -> assertThat(ex.code()).isEqualTo(ErrorCode.INVALID_TRANSITION));
+    }
+
     private static void assertInvalidTransition(RequestStatus from, RequestAction action, String expectedMessage) {
         for (StepPosition position : StepPosition.values()) {
             assertThatThrownBy(() -> RequestStateMachine.next(from, action, position))

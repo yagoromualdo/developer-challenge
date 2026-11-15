@@ -1,6 +1,7 @@
 package com.kingspan.purchase.request.application;
 
 import com.kingspan.purchase.request.domain.ActionPolicy;
+import com.kingspan.purchase.request.domain.ApprovalChainBuilder;
 import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Configuration;
 
@@ -11,5 +12,10 @@ class RequestPolicyConfig {
     @Bean
     ActionPolicy actionPolicy() {
         return ActionPolicy.standard();
+    }
+
+    @Bean
+    ApprovalChainBuilder approvalChainBuilder() {
+        return ApprovalChainBuilder.standard();
     }
 }

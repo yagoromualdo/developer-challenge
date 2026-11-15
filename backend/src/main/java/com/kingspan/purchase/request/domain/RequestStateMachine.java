@@ -88,6 +88,14 @@ public final class RequestStateMachine {
         return TRANSITIONS.get(from).get(action).resolve(position);
     }
 
+    /** Destino das ações que não dependem da posição da etapa (todas menos {@link RequestAction#APPROVE}). */
+    public static RequestStatus next(RequestStatus from, RequestAction action) {
+        if (action == APPROVE) {
+            throw new IllegalArgumentException("O destino de APPROVE depende da posição da etapa");
+        }
+        return next(from, action, StepPosition.INTERMEDIATE);
+    }
+
     private static String invalidTransitionMessage(RequestStatus from, RequestAction action) {
         return "Não é possível " + action.phrase() + ": " + invalidTransitionReason(from, action);
     }

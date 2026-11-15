@@ -2,10 +2,14 @@ package com.kingspan.purchase.request.application;
 
 import com.kingspan.purchase.costcenter.application.CostCenterService;
 import com.kingspan.purchase.request.domain.ActionPolicy;
+import com.kingspan.purchase.request.domain.ApprovalChainBuilder;
 import com.kingspan.purchase.request.domain.HistoryAction;
+import com.kingspan.purchase.request.domain.Money;
 import com.kingspan.purchase.request.domain.RequestAction;
 import com.kingspan.purchase.request.domain.RequestItem;
+import com.kingspan.purchase.request.domain.RequestStateMachine;
 import com.kingspan.purchase.request.domain.RequestStatus;
+import com.kingspan.purchase.request.domain.StepLevel;
 import com.kingspan.purchase.request.infra.PurchaseRequestEntity;
 import com.kingspan.purchase.request.infra.PurchaseRequestRepository;
 import com.kingspan.purchase.request.infra.RequestEventEntity;
@@ -39,7 +43,10 @@ import org.springframework.security.access.AccessDeniedException;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
-/** Criação, edição, detalhe e listagem; as verificações seguem a ordem do README 4.3: 404 → 403 → 409 → 422. */
+/**
+ * Criação, edição, submissão, cancelamento, detalhe e listagem; as ações seguem a ordem do README 4.3: 404 → 403 → 409
+ * → 422.
+ */
 @Service
 public class PurchaseRequestService {
 
@@ -49,6 +56,7 @@ public class PurchaseRequestService {
     private final RequestEventRepository events;
     private final CostCenterService costCenters;
     private final ActionPolicy actionPolicy;
+    private final ApprovalChainBuilder chainBuilder;
     private final Clock clock;
 
     public PurchaseRequestService(
@@ -56,11 +64,13 @@ public class PurchaseRequestService {
             RequestEventRepository events,
             CostCenterService costCenters,
             ActionPolicy actionPolicy,
+            ApprovalChainBuilder chainBuilder,
             Clock clock) {
         this.requests = requests;
         this.events = events;
         this.costCenters = costCenters;
         this.actionPolicy = actionPolicy;
+        this.chainBuilder = chainBuilder;
         this.clock = clock;
     }
 
@@ -71,7 +81,7 @@ public class PurchaseRequestService {
         Instant now = clock.instant();
         PurchaseRequestEntity request = requests.saveAndFlush(new PurchaseRequestEntity(
                 actor.userId(), targetCostCenter, RequestStatus.DRAFT, newVersion(draft, now), now));
-        recordEvent(request, actor, HistoryAction.CREATE, null, now);
+        recordEvent(request, actor, HistoryAction.CREATE, null, null, now);
         log.info(
                 "Solicitação {} criada em DRAFT por {} (centro de custo {}, total {})",
                 request.getId(),
@@ -87,11 +97,7 @@ public class PurchaseRequestService {
      */
     @Transactional
     public RequestDetailView edit(Actor actor, Long requestId, long lockVersion, RequestDraft draft) {
-        PurchaseRequestEntity request = findVisible(actor, requestId);
-        requireRoleAllows(actor, RequestAction.EDIT);
-        requireCurrentLockVersion(request, lockVersion);
-        actionPolicy.check(actor, RequestSnapshotMapper.toSnapshot(request), RequestAction.EDIT, null);
-
+        PurchaseRequestEntity request = loadForAction(actor, requestId, RequestAction.EDIT, lockVersion);
         Instant now = clock.instant();
         RequestVersionEntity current = request.getCurrentVersion();
         if (current.getSubmittedAt() != null) {
@@ -108,13 +114,60 @@ public class PurchaseRequestService {
         }
         // O flush incrementa o @Version agora: a resposta já leva o novo lockVersion, e uma corrida residual vira 409.
         requests.flush();
-        recordEvent(request, actor, HistoryAction.EDIT, request.getStatus(), now);
+        recordEvent(request, actor, HistoryAction.EDIT, request.getStatus(), null, now);
         log.info(
                 "Solicitação {} editada por {} (versão {}, total {})",
                 requestId,
                 actor.userId(),
                 request.getCurrentVersionNumber(),
                 draft.total());
+        return detail(actor, request);
+    }
+
+    /**
+     * Congela a versão atual, monta a cadeia pelo total e categoria dela e grava o mês de competência: o mês da
+     * submissão em {@code America/Sao_Paulo}, pelo {@link Clock}, que o orçamento usa na aprovação final.
+     */
+    @Transactional
+    public RequestDetailView submit(Actor actor, Long requestId, long lockVersion) {
+        PurchaseRequestEntity request = loadForAction(actor, requestId, RequestAction.SUBMIT, lockVersion);
+        Instant now = clock.instant();
+        RequestStatus from = request.getStatus();
+        RequestVersionEntity version = versionToSubmit(request, now);
+        List<StepLevel> chain = chainBuilder.build(Money.of(version.getTotal()), version.getCategory());
+        version.markSubmitted(now, BusinessTime.competenceOf(now));
+        version.defineChain(chain);
+        request.moveTo(RequestStateMachine.next(from, RequestAction.SUBMIT), now);
+        requests.flush();
+        recordEvent(request, actor, HistoryAction.SUBMIT, from, null, now);
+        log.info(
+                "Solicitação {} submetida por {} (versão {}, cadeia {}, competência {}, requestId {})",
+                requestId,
+                actor.userId(),
+                request.getCurrentVersionNumber(),
+                chain,
+                version.getCompetenceMonth(),
+                RequestId.current());
+        return detail(actor, request);
+    }
+
+    /** Dono ou ADMIN, em DRAFT, PENDING_APPROVAL ou CHANGES_REQUESTED; o comentário opcional vai para o histórico. */
+    @Transactional
+    public RequestDetailView cancel(Actor actor, Long requestId, long lockVersion, String comment) {
+        PurchaseRequestEntity request = loadForAction(actor, requestId, RequestAction.CANCEL, lockVersion);
+        Instant now = clock.instant();
+        RequestStatus from = request.getStatus();
+        request.moveTo(RequestStateMachine.next(from, RequestAction.CANCEL), now);
+        requests.flush();
+        recordEvent(request, actor, HistoryAction.CANCEL, from, blankToNull(comment), now);
+        log.info(
+                "Solicitação {} cancelada por {} ({}) a partir de {} (versão {}, requestId {})",
+                requestId,
+                actor.userId(),
+                actor.role(),
+                from,
+                request.getCurrentVersionNumber(),
+                RequestId.current());
         return detail(actor, request);
     }
 
@@ -168,6 +221,29 @@ public class PurchaseRequestService {
     private PurchaseRequestEntity findVisible(Actor actor, Long requestId) {
         return requests.findOne(RequestVisibility.withId(requestId).and(RequestVisibility.visibleTo(actor)))
                 .orElseThrow(() -> new ResourceNotFoundException("Solicitação " + requestId + " não encontrada."));
+    }
+
+    /** Ordem do README 4.3: visibilidade (404) → papel (403) → {@code lockVersion} (409) → regra de negócio (422). */
+    private PurchaseRequestEntity loadForAction(Actor actor, Long requestId, RequestAction action, long lockVersion) {
+        PurchaseRequestEntity request = findVisible(actor, requestId);
+        requireRoleAllows(actor, action);
+        requireCurrentLockVersion(request, lockVersion);
+        actionPolicy.check(actor, RequestSnapshotMapper.toSnapshot(request), action, null);
+        return request;
+    }
+
+    // Reenvio sem edição: a versão atual já foi submetida e é imutável (ADR 002), então o submit cria a v+1.
+    private static RequestVersionEntity versionToSubmit(PurchaseRequestEntity request, Instant now) {
+        RequestVersionEntity current = request.getCurrentVersion();
+        if (current.getSubmittedAt() == null) {
+            return current;
+        }
+        request.addVersion(current.copyForNextVersion(now), now);
+        return request.getCurrentVersion();
+    }
+
+    private static String blankToNull(String text) {
+        return text == null || text.isBlank() ? null : text.strip();
     }
 
     private static void requireRoleAllows(Actor actor, RequestAction action) {
@@ -231,7 +307,12 @@ public class PurchaseRequestService {
     }
 
     private void recordEvent(
-            PurchaseRequestEntity request, Actor actor, HistoryAction action, RequestStatus from, Instant now) {
+            PurchaseRequestEntity request,
+            Actor actor,
+            HistoryAction action,
+            RequestStatus from,
+            String comment,
+            Instant now) {
         events.save(new RequestEventEntity(
                 request.getId(),
                 request.getCurrentVersionNumber(),
@@ -241,7 +322,7 @@ public class PurchaseRequestService {
                 from,
                 request.getStatus(),
                 null,
-                null,
+                comment,
                 now,
                 RequestId.current()));
     }

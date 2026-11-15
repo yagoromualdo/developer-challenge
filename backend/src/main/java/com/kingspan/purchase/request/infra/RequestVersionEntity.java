@@ -120,6 +120,14 @@ public class RequestVersionEntity {
         }
     }
 
+    /** Cópia do conteúdo para a próxima versão, sem submissão nem cadeia: as etapas são recalculadas do zero. */
+    public RequestVersionEntity copyForNextVersion(Instant now) {
+        List<RequestItemEntity> copiedItems = items.stream()
+                .map(item -> new RequestItemEntity(item.getDescription(), item.getQuantity(), item.getUnitPrice()))
+                .toList();
+        return new RequestVersionEntity(title, description, category, neededBy, total, copiedItems, now);
+    }
+
     public void markSubmitted(Instant submittedAt, YearMonth competenceMonth) {
         this.submittedAt = Objects.requireNonNull(submittedAt, "submittedAt");
         this.competenceMonth =
