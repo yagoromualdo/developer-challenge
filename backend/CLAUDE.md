@@ -166,7 +166,12 @@ com.kingspan.purchase
 - Identificadores em inglês; mensagens ao usuário em pt-BR.
 - DTOs e objetos de domínio imutáveis como `record`. Entidade JPA nunca sai pela API. Mapeamento entidade ↔ domínio ↔ DTO **manual** e explícito.
 - Injeção por construtor; campos `final`; sem `@Autowired` em campo.
-- Métodos pequenos e nomes que revelam intenção. Comentários só para explicar **por quê**.
+- Métodos pequenos e nomes que revelam intenção.
+- **Comentários enxutos:**
+  - Não escreva comentários que repetem o código (nome de método, parâmetro, "valida X", "retorna Y") nem banners de seção (`// --- ... ---`).
+  - Comentário só para o **porquê** de algo não óbvio (regra de negócio sutil, decisão de design, caso de borda), em 1–2 linhas.
+  - Javadoc só em tipos e métodos públicos cuja intenção não fique clara pelo nome, em **uma frase**; sem `@param`/`@return` que só repetem a assinatura.
+  - Se um trecho precisa de comentário longo para ser entendido, melhore os nomes ou extraia um método.
 - Sem `catch` genérico silencioso. Sem lógica de negócio em controller.
 - Endpoints exatamente como no README (sem prefixo `/api`; o nginx do front remove o prefixo).
 - `lockVersion` das transições chega no **corpo** da requisição.

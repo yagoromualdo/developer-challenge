@@ -115,6 +115,11 @@ src/app/
 - Tipos explícitos para DTOs da API em `features/*/models` ou `core/http/models`.
 - Sem `any`. Sem lógica de negócio em template.
 - Componentes pequenos; lógica de chamada HTTP em services.
+- **Comentários enxutos:**
+  - Não escreva comentários que repetem o código (nome de método, parâmetro, "valida X", "retorna Y") nem banners de seção (`// --- ... ---`).
+  - Comentário só para o **porquê** de algo não óbvio (regra de negócio sutil, decisão de design, caso de borda), em 1–2 linhas.
+  - JSDoc/TSDoc só em APIs públicas (services, inputs/outputs de componentes compartilhados) cuja intenção não fique clara pelo nome, em **uma frase**; sem `@param`/`@returns` que só repetem a assinatura.
+  - Se um trecho precisa de comentário longo para ser entendido, melhore os nomes ou extraia uma função.
 
 ## 6. Testes (mínimo obrigatório: 3 significativos)
 
