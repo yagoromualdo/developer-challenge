@@ -5,6 +5,8 @@ import static org.assertj.core.api.Assertions.assertThatCode;
 import static org.assertj.core.api.Assertions.assertThatThrownBy;
 
 import com.kingspan.purchase.request.domain.Category;
+import com.kingspan.purchase.request.domain.HistoryAction;
+import com.kingspan.purchase.request.domain.RequestLimits;
 import com.kingspan.purchase.request.domain.RequestStatus;
 import com.kingspan.purchase.request.domain.StepLevel;
 import com.kingspan.purchase.request.domain.StepStatus;
@@ -213,6 +215,48 @@ class SchemaMigrationIntegrationTest {
     }
 
     @Test
+    void deveAplicarMigrationV2ComSucesso() {
+        Boolean success =
+                jdbc.queryForObject("SELECT success FROM flyway_schema_history WHERE version = '2'", Boolean.class);
+
+        assertThat(success).isTrue();
+    }
+
+    @ParameterizedTest
+    @EnumSource(HistoryAction.class)
+    void deveAceitarTodaAcaoDeHistoricoDoDominio(HistoryAction action) {
+        long requestId = insertRequest("DRAFT");
+
+        assertThatCode(() -> insertEvent(requestId, action.name())).doesNotThrowAnyException();
+    }
+
+    @Test
+    void deveRejeitarAcaoDeHistoricoForaDoDominio() {
+        long requestId = insertRequest("DRAFT");
+
+        assertThatThrownBy(() -> insertEvent(requestId, "DELETE"))
+                .isInstanceOf(DataIntegrityViolationException.class)
+                .hasMessageContaining("ck_request_event_action");
+    }
+
+    @ParameterizedTest
+    @CsvSource({
+        "request_version, title, " + RequestLimits.TITLE_MAX_LENGTH,
+        "request_version, description, " + RequestLimits.DESCRIPTION_MAX_LENGTH,
+        "request_item, description, " + RequestLimits.ITEM_DESCRIPTION_MAX_LENGTH,
+        "approval_step, comment, " + RequestLimits.COMMENT_MAX_LENGTH,
+        "request_event, comment, " + RequestLimits.COMMENT_MAX_LENGTH
+    })
+    void deveTerColunasDeTextoComOsMesmosLimitesDaValidacao(String table, String column, int maxLength) {
+        Integer length = jdbc.queryForObject("""
+                SELECT character_maximum_length FROM information_schema.columns
+                WHERE table_schema = 'public' AND table_name = ? AND column_name = ?
+                """, Integer.class, table, column);
+
+        assertThat(length).isEqualTo(maxLength);
+    }
+
+    @Test
     void deveLimparHistoricoComTruncateApesarDoTrigger() {
         insertEvent(insertRequest("DRAFT"));
 
@@ -297,10 +341,14 @@ class SchemaMigrationIntegrationTest {
     }
 
     private void insertEvent(long requestId) {
+        insertEvent(requestId, "CREATE");
+    }
+
+    private void insertEvent(long requestId, String action) {
         jdbc.update("""
                 INSERT INTO request_event (request_id, version_number, actor_id, actor_role, action, to_status, occurred_at)
-                VALUES (?, 1, ?, 'SOLICITANTE', 'CREATE', 'DRAFT', now())
-                """, requestId, requesterId);
+                VALUES (?, 1, ?, 'SOLICITANTE', ?, 'DRAFT', now())
+                """, requestId, requesterId, action);
     }
 
     private long countEvents() {

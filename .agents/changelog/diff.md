@@ -418,3 +418,37 @@ One block per agent turn, one row per changed file:
 | File | Change | Additions | Removals |
 |---|---|---|---|
 | `backend/CLAUDE.md` | modified | +1 | -0 |
+
+---
+### Turn 2026-11-15 14:13:12 -0300 · ClaudeCode
+- **Source**: command
+- **Session**: a32998bd-d583-4d66-83ea-2c191df9f110
+- **Prompt**: Execute a etapa E13 do docs/plano-execucao.md. A visibilidade deve ser uma Specification reutilizável (DRAFT só para o dono; fora da visibilidade = 404). O total é sempre calculado no back. A edição deve passar pela ActionPolicy da E8: não-dono que enxerga a solicitação recebe 422 NOT_REQUEST_OWNER. O allowedActions do detalhe vem de ActionPolicy.allowedActions. O Bean Validation dos DTOs deve usar os mesmos limites das colunas da E9 (título 200, descrição e comentário 2000, item 500
+- **Summary**: E13: create/edit/detail draft requests with visibility Specification, ActionPolicy-based edit checks, backend-computed total, history events and V2 CHECK on request_event.action
+
+| File | Change | Additions | Removals |
+|---|---|---|---|
+| `backend/src/main/java/com/kingspan/purchase/request/application/PurchaseRequestService.java` | created | +197 | -0 |
+| `backend/src/main/java/com/kingspan/purchase/request/application/RequestDetailView.java` | created | +84 | -0 |
+| `backend/src/main/java/com/kingspan/purchase/request/application/RequestDraft.java` | created | +24 | -0 |
+| `backend/src/main/java/com/kingspan/purchase/request/application/RequestPolicyConfig.java` | created | +15 | -0 |
+| `backend/src/main/java/com/kingspan/purchase/request/domain/HistoryAction.java` | modified | +16 | -2 |
+| `backend/src/main/java/com/kingspan/purchase/request/domain/RequestItem.java` | created | +28 | -0 |
+| `backend/src/main/java/com/kingspan/purchase/request/domain/RequestLimits.java` | created | +20 | -0 |
+| `backend/src/main/java/com/kingspan/purchase/request/infra/PurchaseRequestRepository.java` | modified | +3 | -1 |
+| `backend/src/main/java/com/kingspan/purchase/request/infra/RequestVisibility.java` | created | +49 | -0 |
+| `backend/src/main/java/com/kingspan/purchase/request/web/CreatePurchaseRequestRequest.java` | created | +45 | -0 |
+| `backend/src/main/java/com/kingspan/purchase/request/web/PurchaseRequestController.java` | created | +45 | -0 |
+| `backend/src/main/java/com/kingspan/purchase/request/web/PurchaseRequestResponse.java` | created | +78 | -0 |
+| `backend/src/main/java/com/kingspan/purchase/request/web/RequestItemPayload.java` | created | +40 | -0 |
+| `backend/src/main/java/com/kingspan/purchase/request/web/UpdatePurchaseRequestRequest.java` | created | +50 | -0 |
+| `backend/src/main/java/com/kingspan/purchase/shared/config/ValidationConfig.java` | created | +20 | -0 |
+| `backend/src/main/java/com/kingspan/purchase/shared/domain/BusinessTime.java` | created | +11 | -0 |
+| `backend/src/main/java/com/kingspan/purchase/shared/error/ErrorCode.java` | modified | +1 | -0 |
+| `backend/src/main/resources/db/migration/V2__request_event_action_check.sql` | created | +4 | -0 |
+| `backend/src/test/java/com/kingspan/purchase/SchemaMigrationIntegrationTest.java` | modified | +50 | -2 |
+| `backend/src/test/java/com/kingspan/purchase/request/domain/HistoryActionTest.java` | created | +25 | -0 |
+| `backend/src/test/java/com/kingspan/purchase/request/domain/RequestItemTest.java` | created | +41 | -0 |
+| `backend/src/test/java/com/kingspan/purchase/request/web/PurchaseRequestIntegrationTest.java` | created | +438 | -0 |
+| `backend/src/test/java/com/kingspan/purchase/shared/config/ValidationConfigTest.java` | created | +41 | -0 |
+| `docs/adr/003-visibilidade-404-e-ordem-de-verificacao.md` | created | +27 | -0 |
