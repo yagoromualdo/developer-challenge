@@ -369,3 +369,41 @@ One block per agent turn, one row per changed file:
 |---|---|---|---|
 | `docs/api/insomnia-collection.json` | created | +316 | -0 |
 | `docs/insomnia/purchase-api.json` | deleted | +0 | -315 |
+
+---
+### Turn 2026-11-15 13:12:27 -0300 · ClaudeCode
+- **Source**: command
+- **Session**: b503fa03-4344-40c8-ac3d-d260e62785bf
+- **Prompt**: Execute a etapa E12 do docs/plano-execucao.md. O PUT de orçamento deve usar UPDATE condicional para o BUDGET_BELOW_CONSUMED, sem condição de corrida.
+- **Summary**: E12: admin endpoints for users, cost centers and monthly budgets (race-free conditional upsert for BUDGET_BELOW_CONSUMED), tests and Insomnia collection
+
+| File | Change | Additions | Removals |
+|---|---|---|---|
+| `backend/src/main/java/com/kingspan/purchase/budget/application/BudgetService.java` | created | +83 | -0 |
+| `backend/src/main/java/com/kingspan/purchase/budget/application/BudgetView.java` | created | +12 | -0 |
+| `backend/src/main/java/com/kingspan/purchase/budget/infra/BudgetRepository.java` | modified | +29 | -0 |
+| `backend/src/main/java/com/kingspan/purchase/budget/web/BudgetController.java` | created | +36 | -0 |
+| `backend/src/main/java/com/kingspan/purchase/budget/web/BudgetResponse.java` | created | +16 | -0 |
+| `backend/src/main/java/com/kingspan/purchase/budget/web/DefineBudgetRequest.java` | created | +16 | -0 |
+| `backend/src/main/java/com/kingspan/purchase/costcenter/application/CostCenterService.java` | modified | +40 | -1 |
+| `backend/src/main/java/com/kingspan/purchase/costcenter/application/CostCenterView.java` | created | +11 | -0 |
+| `backend/src/main/java/com/kingspan/purchase/costcenter/web/CostCenterController.java` | created | +35 | -0 |
+| `backend/src/main/java/com/kingspan/purchase/costcenter/web/CostCenterResponse.java` | created | +11 | -0 |
+| `backend/src/main/java/com/kingspan/purchase/costcenter/web/CreateCostCenterRequest.java` | created | +14 | -0 |
+| `backend/src/main/java/com/kingspan/purchase/shared/error/ErrorCode.java` | modified | +4 | -0 |
+| `backend/src/main/java/com/kingspan/purchase/shared/error/GlobalExceptionHandler.java` | modified | +20 | -0 |
+| `backend/src/main/java/com/kingspan/purchase/shared/error/ResourceNotFoundException.java` | created | +9 | -0 |
+| `backend/src/main/java/com/kingspan/purchase/user/application/AuthService.java` | modified | +6 | -48 |
+| `backend/src/main/java/com/kingspan/purchase/user/application/UserService.java` | created | +97 | -0 |
+| `backend/src/main/java/com/kingspan/purchase/user/domain/UserProfile.java` | created | +47 | -0 |
+| `backend/src/main/java/com/kingspan/purchase/user/infra/UserEntity.java` | modified | +7 | -0 |
+| `backend/src/main/java/com/kingspan/purchase/user/web/ChangeUserProfileRequest.java` | created | +11 | -0 |
+| `backend/src/main/java/com/kingspan/purchase/user/web/CreateUserRequest.java` | created | +29 | -0 |
+| `backend/src/main/java/com/kingspan/purchase/user/web/UserController.java` | created | +45 | -0 |
+| `backend/src/test/java/com/kingspan/purchase/budget/web/BudgetIntegrationTest.java` | created | +274 | -0 |
+| `backend/src/test/java/com/kingspan/purchase/costcenter/web/CostCenterIntegrationTest.java` | created | +129 | -0 |
+| `backend/src/test/java/com/kingspan/purchase/support/ApiClient.java` | created | +83 | -0 |
+| `backend/src/test/java/com/kingspan/purchase/user/domain/UserProfileTest.java` | created | +81 | -0 |
+| `backend/src/test/java/com/kingspan/purchase/user/web/AuthIntegrationTest.java` | modified | +4 | -2 |
+| `backend/src/test/java/com/kingspan/purchase/user/web/UserAdminIntegrationTest.java` | created | +270 | -0 |
+| `docs/api/insomnia-collection.json` | modified | +146 | -8 |

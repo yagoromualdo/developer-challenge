@@ -9,6 +9,7 @@ import java.util.Map;
 import org.jspecify.annotations.Nullable;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
+import org.springframework.beans.TypeMismatchException;
 import org.springframework.dao.OptimisticLockingFailureException;
 import org.springframework.http.HttpHeaders;
 import org.springframework.http.HttpStatus;
@@ -28,6 +29,7 @@ import org.springframework.web.bind.annotation.RestControllerAdvice;
 import org.springframework.web.context.request.ServletWebRequest;
 import org.springframework.web.context.request.WebRequest;
 import org.springframework.web.method.annotation.HandlerMethodValidationException;
+import org.springframework.web.method.annotation.MethodArgumentTypeMismatchException;
 import org.springframework.web.servlet.mvc.method.annotation.ResponseEntityExceptionHandler;
 
 /**
@@ -46,6 +48,13 @@ public class GlobalExceptionHandler extends ResponseEntityExceptionHandler {
     ResponseEntity<Object> handleBusinessRule(BusinessRuleException ex, WebRequest request) {
         ProblemDetail problem = problem(UNPROCESSABLE, "Regra de negócio violada", ex.getMessage(), ex.code());
         return handleExceptionInternal(ex, problem, new HttpHeaders(), UNPROCESSABLE, request);
+    }
+
+    @ExceptionHandler(ResourceNotFoundException.class)
+    ResponseEntity<Object> handleNotFound(ResourceNotFoundException ex, WebRequest request) {
+        ProblemDetail problem =
+                problem(HttpStatus.NOT_FOUND, "Recurso não encontrado", ex.getMessage(), ErrorCode.NOT_FOUND);
+        return handleExceptionInternal(ex, problem, new HttpHeaders(), HttpStatus.NOT_FOUND, request);
     }
 
     @ExceptionHandler(OptimisticLockingFailureException.class)
@@ -125,6 +134,17 @@ public class GlobalExceptionHandler extends ResponseEntityExceptionHandler {
                         .forEach(error -> violations.add(new FieldViolation(parameter, error.getDefaultMessage())));
             }
         }
+        return validationProblem(ex, violations, headers, HttpStatus.BAD_REQUEST, request);
+    }
+
+    // Ex.: /cost-centers/abc ou /budgets/2026-13. Sem isto a superclasse devolveria um detail em inglês.
+    @Override
+    protected ResponseEntity<Object> handleTypeMismatch(
+            TypeMismatchException ex, HttpHeaders headers, HttpStatusCode status, WebRequest request) {
+        String field =
+                ex instanceof MethodArgumentTypeMismatchException mismatch ? mismatch.getName() : ex.getPropertyName();
+        List<FieldViolation> violations = new ArrayList<>();
+        violations.add(new FieldViolation(String.valueOf(field), "valor inválido: '" + ex.getValue() + "'"));
         return validationProblem(ex, violations, headers, HttpStatus.BAD_REQUEST, request);
     }
 

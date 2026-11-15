@@ -268,7 +268,7 @@ class AuthIntegrationTest {
 
         Response response = get("/users", login("admin@example.com"));
 
-        assertThat(response.status()).isNotIn(401, 403);
+        assertThat(response.status()).isEqualTo(200);
     }
 
     private UserEntity saveUser(String email, Role role, ApproverLevel level, Long costCenter) {
@@ -327,7 +327,9 @@ class AuthIntegrationTest {
     private Response exchange(RestClient.RequestHeadersSpec<?> spec) {
         return spec.exchange((request, response) -> {
             String body = response.bodyTo(String.class);
-            Map<String, Object> parsed = body == null || body.isBlank() ? Map.of() : json.readValue(body, Map.class);
+            // Só objetos viram Map: GET /users (admin) devolve uma lista.
+            Map<String, Object> parsed =
+                    body == null || !body.startsWith("{") ? Map.of() : json.readValue(body, Map.class);
             return new Response(response.getStatusCode().value(), response.getHeaders(), body, parsed);
         });
     }

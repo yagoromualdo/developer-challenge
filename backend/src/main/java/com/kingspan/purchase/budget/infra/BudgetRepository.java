@@ -45,4 +45,33 @@ public interface BudgetRepository extends JpaRepository<BudgetEntity, Long> {
                AND amount - consumed >= :value
             """)
     int consumeIfAvailable(Long costCenterId, LocalDate month, BigDecimal value);
+
+    /**
+     * Define o valor orçado do mês num único comando (ADR 001): cria a linha se o mês não tem orçamento ou atualiza
+     * só se {@code consumed <= :amount}. Devolve 1 se gravou e 0 se o novo valor fica abaixo do já consumido.
+     */
+    default int defineAmount(Long costCenterId, YearMonth month, BigDecimal amount) {
+        Objects.requireNonNull(costCenterId, "costCenterId");
+        Objects.requireNonNull(month, "month");
+        if (Objects.requireNonNull(amount, "amount").signum() < 0) {
+            throw new IllegalArgumentException("Orçamento não pode ser negativo: " + amount.toPlainString());
+        }
+        return upsertAmountIfNotBelowConsumed(costCenterId, month.atDay(1), amount);
+    }
+
+    /**
+     * Use {@link #defineAmount}. No conflito, o Postgres trava a linha e avalia o WHERE do DO UPDATE sobre a versão
+     * mais recente: um consumo concorrente commitado antes entra na conta, e um posterior vê o novo amount. Dois PUTs
+     * simultâneos num mês sem orçamento não violam a UNIQUE, porque o ON CONFLICT resolve a inserção especulativa.
+     */
+    // clearAutomatically: uma BudgetEntity já carregada no contexto ficaria com o amount antigo.
+    @Modifying(flushAutomatically = true, clearAutomatically = true)
+    @Query(nativeQuery = true, value = """
+            INSERT INTO budget (cost_center_id, month, amount, consumed)
+            VALUES (:costCenterId, :month, :amount, 0)
+            ON CONFLICT (cost_center_id, month)
+            DO UPDATE SET amount = EXCLUDED.amount
+             WHERE budget.consumed <= EXCLUDED.amount
+            """)
+    int upsertAmountIfNotBelowConsumed(Long costCenterId, LocalDate month, BigDecimal amount);
 }

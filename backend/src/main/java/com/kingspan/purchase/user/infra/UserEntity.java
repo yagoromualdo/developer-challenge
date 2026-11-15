@@ -68,6 +68,13 @@ public class UserEntity {
         this.updatedAt = now;
     }
 
+    public void changeProfile(Role role, ApproverLevel approverLevel, Long costCenterId, Instant now) {
+        this.role = Objects.requireNonNull(role, "role");
+        this.approverLevel = approverLevel;
+        this.costCenterId = costCenterId;
+        this.updatedAt = Objects.requireNonNull(now, "now");
+    }
+
     public Long getId() {
         return id;
     }
