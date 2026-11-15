@@ -14,7 +14,13 @@ public final class RequestSnapshotMapper {
 
     /** Usa só as etapas da versão atual, para aprovações de versões anteriores não contarem (ADR 002). */
     public static RequestSnapshot toSnapshot(PurchaseRequestEntity request) {
-        List<ApprovalStep> steps = request.getCurrentVersion().getSteps().stream()
+        return toSnapshot(request.getCurrentVersion());
+    }
+
+    /** Parte da versão atual já carregada com a solicitação e as etapas, sem ler as demais versões (evita N+1). */
+    public static RequestSnapshot toSnapshot(RequestVersionEntity currentVersion) {
+        PurchaseRequestEntity request = currentVersion.getRequest();
+        List<ApprovalStep> steps = currentVersion.getSteps().stream()
                 .map(RequestSnapshotMapper::toStep)
                 .toList();
         return new RequestSnapshot(request.getOwnerId(), request.getCostCenterId(), request.getStatus(), steps);

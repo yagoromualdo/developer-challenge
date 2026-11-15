@@ -8,7 +8,9 @@ import org.springframework.data.jpa.repository.JpaSpecificationExecutor;
 import org.springframework.data.jpa.repository.Query;
 
 public interface PurchaseRequestRepository
-        extends JpaRepository<PurchaseRequestEntity, Long>, JpaSpecificationExecutor<PurchaseRequestEntity> {
+        extends JpaRepository<PurchaseRequestEntity, Long>,
+                JpaSpecificationExecutor<PurchaseRequestEntity>,
+                RequestIdQuery {
 
     /** Versões atuais de uma página da listagem numa só consulta, sem carregar as coleções uma a uma (N+1). */
     @Query("""
@@ -28,4 +30,13 @@ public interface PurchaseRequestRepository
             where r.id = :requestId and v.versionNumber = r.currentVersionNumber
             """)
     Optional<RequestVersionEntity> findCurrentVersionWithSteps(Long requestId);
+
+    /** A mesma foto coerente de {@link #findCurrentVersionWithSteps}, para várias solicitações de uma vez. */
+    @Query("""
+            select v from RequestVersionEntity v
+            join fetch v.request r
+            left join fetch v.steps
+            where r.id in :requestIds and v.versionNumber = r.currentVersionNumber
+            """)
+    List<RequestVersionEntity> findCurrentVersionsWithSteps(Collection<Long> requestIds);
 }

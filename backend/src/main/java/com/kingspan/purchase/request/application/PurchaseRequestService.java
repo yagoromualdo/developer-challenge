@@ -194,6 +194,12 @@ public class PurchaseRequestService {
                         "A solicitação " + requestId + " não tem a versão " + versionNumber + "."));
     }
 
+    /** Mesma visibilidade do detalhe (404 fora dela, ADR 003). */
+    @Transactional(readOnly = true)
+    public List<RequestEventView> history(Actor actor, Long requestId) {
+        return history.of(guard.findVisible(actor, requestId).getId());
+    }
+
     /** Listagem dentro da visibilidade do ator: quem filtra por um centro de custo que não vê recebe página vazia. */
     @Transactional(readOnly = true)
     public Page<RequestSummaryView> list(Actor actor, RequestFilter filter, RequestSort sort, int page, int size) {

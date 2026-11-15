@@ -584,3 +584,28 @@ One block per agent turn, one row per changed file:
 |---|---|---|---|
 | `backend/src/main/java/com/kingspan/purchase/request/application/RequestActionGuard.java` | modified | +5 | -1 |
 | `docs/plano-execucao.md` | modified | +1 | -0 |
+
+---
+### Turn 2026-11-15 17:13:10 -0300 · ClaudeCode
+- **Source**: command
+- **Session**: 35f32659-7bc1-4d3f-93f1-d69a7809b0d8
+- **Prompt**: Execute a etapa E20 do docs/plano-execucao.md. A caixa de aprovação deve filtrar os candidatos com ActionPolicy.isAllowed (a mesma avaliação do allowedActions), sem lógica paralela.
+- **Summary**: E20: add GET /requests/:id/history and GET /approvals/inbox filtered by ActionPolicy.isAllowed, with integration tests
+
+| File | Change | Additions | Removals |
+|---|---|---|---|
+| `backend/src/main/java/com/kingspan/purchase/request/application/ApprovalInboxItemView.java` | created | +22 | -0 |
+| `backend/src/main/java/com/kingspan/purchase/request/application/ApprovalInboxService.java` | created | +57 | -0 |
+| `backend/src/main/java/com/kingspan/purchase/request/application/PurchaseRequestService.java` | modified | +6 | -0 |
+| `backend/src/main/java/com/kingspan/purchase/request/application/RequestEventView.java` | created | +38 | -0 |
+| `backend/src/main/java/com/kingspan/purchase/request/application/RequestHistory.java` | modified | +9 | -1 |
+| `backend/src/main/java/com/kingspan/purchase/request/infra/PurchaseRequestRepository.java` | modified | +12 | -1 |
+| `backend/src/main/java/com/kingspan/purchase/request/infra/RequestIdQuery.java` | created | +14 | -0 |
+| `backend/src/main/java/com/kingspan/purchase/request/infra/RequestIdQueryImpl.java` | created | +32 | -0 |
+| `backend/src/main/java/com/kingspan/purchase/request/infra/RequestSnapshotMapper.java` | modified | +7 | -1 |
+| `backend/src/main/java/com/kingspan/purchase/request/web/ApprovalInboxController.java` | created | +27 | -0 |
+| `backend/src/main/java/com/kingspan/purchase/request/web/ApprovalInboxItemResponse.java` | created | +46 | -0 |
+| `backend/src/main/java/com/kingspan/purchase/request/web/PurchaseRequestController.java` | modified | +7 | -0 |
+| `backend/src/main/java/com/kingspan/purchase/request/web/RequestEventResponse.java` | created | +41 | -0 |
+| `backend/src/test/java/com/kingspan/purchase/request/web/ApprovalInboxIntegrationTest.java` | created | +261 | -0 |
+| `backend/src/test/java/com/kingspan/purchase/request/web/RequestHistoryIntegrationTest.java` | created | +261 | -0 |

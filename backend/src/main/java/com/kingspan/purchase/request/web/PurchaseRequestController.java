@@ -113,6 +113,13 @@ class PurchaseRequestController {
         return RequestVersionResponse.from(requestService.getVersion(actor, id, versionNumber));
     }
 
+    @GetMapping("/{id}/history")
+    List<RequestEventResponse> history(Actor actor, @PathVariable Long id) {
+        return requestService.history(actor, id).stream()
+                .map(RequestEventResponse::from)
+                .toList();
+    }
+
     @PutMapping("/{id}")
     PurchaseRequestResponse edit(
             Actor actor, @PathVariable Long id, @Valid @RequestBody UpdatePurchaseRequestRequest request) {
