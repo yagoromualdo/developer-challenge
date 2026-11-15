@@ -517,3 +517,26 @@ One block per agent turn, one row per changed file:
 | `backend/src/test/java/com/kingspan/purchase/request/domain/RequestStateMachineTest.java` | modified | +30 | -0 |
 | `backend/src/test/java/com/kingspan/purchase/request/web/PurchaseRequestSubmitCancelIntegrationTest.java` | created | +419 | -0 |
 | `backend/src/test/java/com/kingspan/purchase/shared/domain/BusinessTimeTest.java` | created | +22 | -0 |
+
+---
+### Turn 2026-11-15 15:43:16 -0300 · ClaudeCode
+- **Source**: command
+- **Session**: 103cd344-e243-4ea0-a25c-a5ecca831447
+- **Prompt**: Execute a etapa E17 do docs/plano-execucao.md. Siga explicitamente a ordem 404 → 403 (ActionPolicy.roleAllows) → 409 (lockVersion) → 422 (ActionPolicy.check) no service, sem @PreAuthorize nesses endpoints e sem duplicar regras da policy. O BUDGET_EXCEEDED fica fora da policy, no UPDATE condicional da última etapa. Se a etapa ficar grande, proponha dividir em mais de um commit.
+- **Summary**: E17: approve, reject and request-changes with 404-403-409-422 order, last-step budget consumption and events; extracted RequestActionGuard and RequestHistory
+
+| File | Change | Additions | Removals |
+|---|---|---|---|
+| `backend/src/main/java/com/kingspan/purchase/budget/application/BudgetService.java` | modified | +30 | -0 |
+| `backend/src/main/java/com/kingspan/purchase/costcenter/application/CostCenterService.java` | modified | +8 | -0 |
+| `backend/src/main/java/com/kingspan/purchase/request/application/ApprovalService.java` | created | +104 | -0 |
+| `backend/src/main/java/com/kingspan/purchase/request/application/PurchaseRequestService.java` | modified | +14 | -69 |
+| `backend/src/main/java/com/kingspan/purchase/request/application/RequestActionGuard.java` | created | +55 | -0 |
+| `backend/src/main/java/com/kingspan/purchase/request/application/RequestHistory.java` | created | +49 | -0 |
+| `backend/src/main/java/com/kingspan/purchase/request/domain/RequestSnapshot.java` | modified | +14 | -0 |
+| `backend/src/main/java/com/kingspan/purchase/request/domain/StepStatus.java` | modified | +11 | -1 |
+| `backend/src/main/java/com/kingspan/purchase/request/web/PurchaseRequestController.java` | modified | +29 | -1 |
+| `backend/src/main/java/com/kingspan/purchase/request/web/StepDecisionRequest.java` | created | +19 | -0 |
+| `backend/src/test/java/com/kingspan/purchase/request/domain/RequestSnapshotTest.java` | modified | +44 | -0 |
+| `backend/src/test/java/com/kingspan/purchase/request/domain/StepStatusTest.java` | created | +25 | -0 |
+| `backend/src/test/java/com/kingspan/purchase/request/web/ApprovalIntegrationTest.java` | created | +498 | -0 |
