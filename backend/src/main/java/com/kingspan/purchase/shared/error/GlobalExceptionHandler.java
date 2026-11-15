@@ -16,6 +16,9 @@ import org.springframework.http.HttpStatusCode;
 import org.springframework.http.ProblemDetail;
 import org.springframework.http.ResponseEntity;
 import org.springframework.http.converter.HttpMessageNotReadableException;
+import org.springframework.security.access.AccessDeniedException;
+import org.springframework.security.authentication.BadCredentialsException;
+import org.springframework.security.core.AuthenticationException;
 import org.springframework.validation.FieldError;
 import org.springframework.validation.method.ParameterErrors;
 import org.springframework.validation.method.ParameterValidationResult;
@@ -53,6 +56,38 @@ public class GlobalExceptionHandler extends ResponseEntityExceptionHandler {
                 "O recurso foi alterado por outra operação. Recarregue os dados e tente novamente.",
                 ErrorCode.CONCURRENT_MODIFICATION);
         return handleExceptionInternal(ex, problem, new HttpHeaders(), HttpStatus.CONFLICT, request);
+    }
+
+    // Mesma mensagem para e-mail inexistente e senha errada: não revela quais e-mails estão cadastrados.
+    @ExceptionHandler(BadCredentialsException.class)
+    ResponseEntity<Object> handleBadCredentials(BadCredentialsException ex, WebRequest request) {
+        ProblemDetail problem = problem(
+                HttpStatus.UNAUTHORIZED,
+                "Credenciais inválidas",
+                "E-mail ou senha inválidos.",
+                ErrorCode.INVALID_CREDENTIALS);
+        return handleExceptionInternal(ex, problem, bearerChallenge(), HttpStatus.UNAUTHORIZED, request);
+    }
+
+    /** Também recebe as falhas da cadeia do Spring Security, repassadas pelo {@code ProblemDetailsSecurityHandler}. */
+    @ExceptionHandler(AuthenticationException.class)
+    ResponseEntity<Object> handleAuthentication(AuthenticationException ex, WebRequest request) {
+        ProblemDetail problem = problem(
+                HttpStatus.UNAUTHORIZED,
+                "Não autenticado",
+                "Autenticação necessária: envie um token de acesso válido e não expirado no header Authorization.",
+                ErrorCode.UNAUTHORIZED);
+        return handleExceptionInternal(ex, problem, bearerChallenge(), HttpStatus.UNAUTHORIZED, request);
+    }
+
+    @ExceptionHandler(AccessDeniedException.class)
+    ResponseEntity<Object> handleAccessDenied(AccessDeniedException ex, WebRequest request) {
+        ProblemDetail problem = problem(
+                HttpStatus.FORBIDDEN,
+                "Acesso negado",
+                "Seu papel não permite executar esta ação.",
+                ErrorCode.ACCESS_DENIED);
+        return handleExceptionInternal(ex, problem, new HttpHeaders(), HttpStatus.FORBIDDEN, request);
     }
 
     @ExceptionHandler(Exception.class)
@@ -130,6 +165,13 @@ public class GlobalExceptionHandler extends ResponseEntityExceptionHandler {
                 ErrorCode.VALIDATION_FAILED);
         problem.setProperty("errors", violations);
         return handleExceptionInternal(ex, problem, headers, status, request);
+    }
+
+    // RFC 6750: toda resposta 401 anuncia o esquema esperado.
+    private static HttpHeaders bearerChallenge() {
+        HttpHeaders headers = new HttpHeaders();
+        headers.set(HttpHeaders.WWW_AUTHENTICATE, "Bearer");
+        return headers;
     }
 
     private static ProblemDetail problem(HttpStatusCode status, String title, String detail, ErrorCode code) {

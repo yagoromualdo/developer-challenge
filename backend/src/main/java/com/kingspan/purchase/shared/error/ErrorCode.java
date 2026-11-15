@@ -6,6 +6,10 @@ public enum ErrorCode {
     VALIDATION_FAILED,
     MALFORMED_REQUEST,
     BAD_REQUEST,
+    // 401 / 403
+    UNAUTHORIZED,
+    INVALID_CREDENTIALS,
+    ACCESS_DENIED,
     // 404 / 405 / 415
     NOT_FOUND,
     METHOD_NOT_ALLOWED,
@@ -21,6 +25,8 @@ public enum ErrorCode {
     BUDGET_BELOW_CONSUMED,
     COMMENT_REQUIRED,
     NOT_REQUEST_OWNER,
+    EMAIL_ALREADY_REGISTERED,
+    COST_CENTER_NOT_FOUND,
     // 500
     INTERNAL_ERROR;
 
@@ -28,6 +34,8 @@ public enum ErrorCode {
     static ErrorCode fromStatus(int status) {
         return switch (status) {
             case 400 -> BAD_REQUEST;
+            case 401 -> UNAUTHORIZED;
+            case 403 -> ACCESS_DENIED;
             case 404 -> NOT_FOUND;
             case 405 -> METHOD_NOT_ALLOWED;
             case 409 -> CONCURRENT_MODIFICATION;

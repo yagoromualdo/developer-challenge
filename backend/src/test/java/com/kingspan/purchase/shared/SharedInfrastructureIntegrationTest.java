@@ -3,8 +3,11 @@ package com.kingspan.purchase.shared;
 import static org.assertj.core.api.Assertions.assertThat;
 
 import com.kingspan.purchase.TestcontainersConfiguration;
+import com.kingspan.purchase.shared.domain.Actor;
+import com.kingspan.purchase.shared.domain.Role;
 import com.kingspan.purchase.shared.error.BusinessRuleException;
 import com.kingspan.purchase.shared.error.ErrorCode;
+import com.kingspan.purchase.shared.security.JwtService;
 import com.kingspan.purchase.shared.web.RequestId;
 import com.kingspan.purchase.shared.web.RequestIdFilter;
 import jakarta.validation.Valid;
@@ -47,9 +50,18 @@ class SharedInfrastructureIntegrationTest {
 
     private RestClient client;
 
+    @Autowired
+    private JwtService jwtService;
+
+    // Token válido em todas as chamadas: os probes e a rota inexistente exigem autenticação desde a E11.
     @BeforeEach
     void setUp() {
-        client = RestClient.create("http://localhost:" + port);
+        String token =
+                jwtService.issue(new Actor(1L, Role.SOLICITANTE, 1L, null)).value();
+        client = RestClient.builder()
+                .baseUrl("http://localhost:" + port)
+                .defaultHeader(HttpHeaders.AUTHORIZATION, "Bearer " + token)
+                .build();
     }
 
     @Test

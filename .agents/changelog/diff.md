@@ -299,3 +299,61 @@ One block per agent turn, one row per changed file:
 | `backend/src/test/java/com/kingspan/purchase/budget/infra/BudgetRepositoryIntegrationTest.java` | created | +143 | -0 |
 | `backend/src/test/java/com/kingspan/purchase/request/infra/PurchaseRequestPersistenceIntegrationTest.java` | created | +255 | -0 |
 | `backend/src/test/java/com/kingspan/purchase/support/DatabaseCleaner.java` | created | +25 | -0 |
+
+---
+### Turn 2026-11-14 23:13:47 -0300 · ClaudeCode
+- **Source**: command
+- **Session**: a11c083e-7ab8-405b-a174-598f8712bc3b
+- **Prompt**: Execute a etapa E11 do docs/plano-execucao.md. Adicione as dependências de Spring Security e OAuth2 Resource Server compatíveis com o Spring Boot 4.1.2. 401 e 403 também devem sair em application/problem+json, e nenhuma resposta pode conter senha ou hash.
+- **Summary**: E11: add Spring Security + OAuth2 Resource Server, HS256 JwtService, /auth login/register/me, 401/403 as problem+json, Actor resolver and tests
+
+| File | Change | Additions | Removals |
+|---|---|---|---|
+| `.env.example` | modified | +3 | -0 |
+| `backend/pom.xml` | modified | +18 | -0 |
+| `backend/src/main/java/com/kingspan/purchase/costcenter/application/CostCenterService.java` | created | +21 | -0 |
+| `backend/src/main/java/com/kingspan/purchase/shared/config/OpenApiConfig.java` | modified | +21 | -1 |
+| `backend/src/main/java/com/kingspan/purchase/shared/config/WebConfig.java` | modified | +16 | -1 |
+| `backend/src/main/java/com/kingspan/purchase/shared/error/ErrorCode.java` | modified | +8 | -0 |
+| `backend/src/main/java/com/kingspan/purchase/shared/error/GlobalExceptionHandler.java` | modified | +42 | -0 |
+| `backend/src/main/java/com/kingspan/purchase/shared/security/ActorArgumentResolver.java` | created | +43 | -0 |
+| `backend/src/main/java/com/kingspan/purchase/shared/security/IssuedToken.java` | created | +5 | -0 |
+| `backend/src/main/java/com/kingspan/purchase/shared/security/JwtProperties.java` | created | +29 | -0 |
+| `backend/src/main/java/com/kingspan/purchase/shared/security/JwtService.java` | created | +73 | -0 |
+| `backend/src/main/java/com/kingspan/purchase/shared/security/ProblemDetailsSecurityHandler.java` | created | +42 | -0 |
+| `backend/src/main/java/com/kingspan/purchase/shared/security/SecurityConfig.java` | created | +113 | -0 |
+| `backend/src/main/java/com/kingspan/purchase/user/application/AuthService.java` | created | +110 | -0 |
+| `backend/src/main/java/com/kingspan/purchase/user/application/AuthenticatedSession.java` | created | +5 | -0 |
+| `backend/src/main/java/com/kingspan/purchase/user/application/UserAccount.java` | created | +25 | -0 |
+| `backend/src/main/java/com/kingspan/purchase/user/web/AuthController.java` | created | +40 | -0 |
+| `backend/src/main/java/com/kingspan/purchase/user/web/LoginRequest.java` | created | +7 | -0 |
+| `backend/src/main/java/com/kingspan/purchase/user/web/LoginResponse.java` | created | +12 | -0 |
+| `backend/src/main/java/com/kingspan/purchase/user/web/MaxUtf8Bytes.java` | created | +45 | -0 |
+| `backend/src/main/java/com/kingspan/purchase/user/web/RegisterRequest.java` | created | +26 | -0 |
+| `backend/src/main/java/com/kingspan/purchase/user/web/UserResponse.java` | created | +18 | -0 |
+| `backend/src/main/resources/application.properties` | modified | +5 | -0 |
+| `backend/src/test/java/com/kingspan/purchase/shared/SharedInfrastructureIntegrationTest.java` | modified | +13 | -1 |
+| `backend/src/test/java/com/kingspan/purchase/shared/security/JwtServiceTest.java` | created | +84 | -0 |
+| `backend/src/test/java/com/kingspan/purchase/user/web/AuthIntegrationTest.java` | created | +336 | -0 |
+
+---
+### Turn 2026-11-15 12:24:06 -0300 · ClaudeCode
+- **Source**: command
+- **Session**: a11c083e-7ab8-405b-a174-598f8712bc3b
+- **Prompt**: Pode me enviar todos esses endepoints de teste manual em um arquivo único, para o Insomnia. Além disso, se tiver outros além desses, me mande também
+- **Summary**: Add Insomnia collection with manual tests for auth, Problem Details and role-based 403 (E11)
+
+| File | Change | Additions | Removals |
+|---|---|---|---|
+| `docs/insomnia/purchase-api.json` | created | +312 | -0 |
+
+---
+### Turn 2026-11-15 12:34:48 -0300 · ClaudeCode
+- **Source**: command
+- **Session**: a11c083e-7ab8-405b-a174-598f8712bc3b
+- **Prompt**: Acabei de fazer o login, porém:
+- **Summary**: Insomnia collection: capture login tokens with after-response scripts instead of ID-based response tags
+
+| File | Change | Additions | Removals |
+|---|---|---|---|
+| `docs/insomnia/purchase-api.json` | modified | +10 | -7 |
