@@ -662,3 +662,14 @@ One block per agent turn, one row per changed file:
 | `backend/.dockerignore` | created | +11 | -0 |
 | `backend/Dockerfile` | created | +35 | -0 |
 | `docker-compose.yml` | modified | +25 | -0 |
+
+---
+### Turn 2026-11-15 23:55:17 -0300 · ClaudeCode
+- **Source**: command
+- **Session**: 13c01938-5b3b-4487-a287-f7a1ac7e440d
+- **Prompt**: Execute a etapa E24 do docs/plano-execucao.md. Crie .github/workflows/ci.yml apenas com o job backend: runner ubuntu-latest, actions/setup-java com Temurin 21 e cache do Maven, working-directory backend/, comando ./mvnw -B verify. Dispare em push e pull_request. Os jobs de frontend e compose-smoke entram depois, na E33. Garanta que o mvnw tenha permissão de execução no Git (se não tiver, me diga o comando para corrigir em vez de alterar arquivos fora do escopo).
+- **Summary**: Add GitHub Actions CI workflow with backend job (Temurin 21, Maven cache, ./mvnw -B verify)
+
+| File | Change | Additions | Removals |
+|---|---|---|---|
+| `.github/workflows/ci.yml` | created | +35 | -0 |
