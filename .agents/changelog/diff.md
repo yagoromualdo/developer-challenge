@@ -868,3 +868,21 @@ One block per agent turn, one row per changed file:
 |---|---|---|---|
 
 ---
+
+---
+### Turn 2026-11-16 19:28:33 -0300 · ClaudeCode
+- **Source**: command
+- **Session**: 873b3841-27fd-4d32-a439-de20bb5e4480
+- **Prompt**: Execute a etapa E31 do docs/plano-execucao.md.
+- **Summary**: E31: add approval inbox page with approve-from-inbox, 409/422 handling and tests; route it and drop the placeholder page
+
+| File | Change | Additions | Removals |
+|---|---|---|---|
+| `frontend/src/app/app.routes.ts` | modified | +3 | -4 |
+| `frontend/src/app/features/approvals/approval-inbox-page.html` | created | +129 | -0 |
+| `frontend/src/app/features/approvals/approval-inbox-page.scss` | created | +109 | -0 |
+| `frontend/src/app/features/approvals/approval-inbox-page.spec.ts` | created | +263 | -0 |
+| `frontend/src/app/features/approvals/approval-inbox-page.ts` | created | +170 | -0 |
+| `frontend/src/app/features/approvals/approvals.models.ts` | created | +24 | -0 |
+| `frontend/src/app/features/approvals/approvals.service.ts` | created | +15 | -0 |
+| `frontend/src/app/features/placeholder/placeholder-page.ts` | deleted | +0 | -14 |

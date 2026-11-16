@@ -1,0 +1,129 @@
+<header class="page-header">
+  <div>
+    <h1>Caixa de aprovação</h1>
+    <p class="subtitle">Solicitações cuja etapa atual você pode aprovar agora.</p>
+  </div>
+  <button mat-stroked-button type="button" (click)="reload()" [disabled]="isBusy()">
+    Atualizar
+  </button>
+</header>
+
+@if (notice(); as message) {
+  <div class="info" role="status" data-testid="notice">{{ message }}</div>
+}
+@if (actionError(); as error) {
+  <app-problem-alert
+    class="action-error"
+    [error]="error"
+    fallback="Não foi possível aprovar a solicitação."
+    data-testid="action-error"
+  />
+}
+
+@if (state().loading || acting() !== null) {
+  <div class="loading" role="status">
+    <mat-progress-bar
+      mode="indeterminate"
+      [attr.aria-label]="acting() !== null ? 'Aprovando a solicitação' : 'Carregando a caixa'"
+    />
+    @if (!state().items && !state().error) {
+      <p>Carregando a caixa de aprovação…</p>
+    }
+  </div>
+}
+
+@if (state().error; as error) {
+  <app-problem-alert [error]="error" fallback="Não foi possível carregar a caixa de aprovação.">
+    <button mat-button type="button" class="retry" (click)="reload()">Tentar novamente</button>
+  </app-problem-alert>
+}
+
+@if (state().items) {
+  @if (rows().length) {
+    <p class="count" data-testid="inbox-count">
+      {{ rows().length }}
+      {{ rows().length === 1 ? 'solicitação aguardando' : 'solicitações aguardando' }} sua
+      aprovação.
+    </p>
+    <div class="table-wrapper" [class.stale]="state().loading">
+      <table mat-table [dataSource]="rows()">
+        <caption class="visually-hidden">
+          Solicitações aguardando sua aprovação
+        </caption>
+
+        <ng-container matColumnDef="title">
+          <th mat-header-cell *matHeaderCellDef>Título</th>
+          <td mat-cell *matCellDef="let row">
+            <a [routerLink]="['/requests', row.id]">{{ row.title }}</a>
+          </td>
+        </ng-container>
+
+        <ng-container matColumnDef="step">
+          <th mat-header-cell *matHeaderCellDef>Etapa</th>
+          <td mat-cell *matCellDef="let row">{{ row.stepLabel }}</td>
+        </ng-container>
+
+        <ng-container matColumnDef="category">
+          <th mat-header-cell *matHeaderCellDef>Categoria</th>
+          <td mat-cell *matCellDef="let row">{{ row.categoryLabel }}</td>
+        </ng-container>
+
+        <ng-container matColumnDef="costCenter">
+          <th mat-header-cell *matHeaderCellDef>Centro de custo</th>
+          <td mat-cell *matCellDef="let row">{{ row.costCenterLabel }}</td>
+        </ng-container>
+
+        <ng-container matColumnDef="total">
+          <th mat-header-cell *matHeaderCellDef class="numeric">Total</th>
+          <td mat-cell *matCellDef="let row" class="numeric">{{ row.total | money }}</td>
+        </ng-container>
+
+        <ng-container matColumnDef="submittedAt">
+          <th mat-header-cell *matHeaderCellDef>Enviada em</th>
+          <td mat-cell *matCellDef="let row">
+            {{ row.submittedAt | date: 'dd/MM/yyyy HH:mm' }}
+          </td>
+        </ng-container>
+
+        <ng-container matColumnDef="neededBy">
+          <th mat-header-cell *matHeaderCellDef>Necessário até</th>
+          <td mat-cell *matCellDef="let row">
+            {{ row.neededBy ? (row.neededBy | date: 'dd/MM/yyyy' : 'UTC') : '—' }}
+          </td>
+        </ng-container>
+
+        <ng-container matColumnDef="actions">
+          <th mat-header-cell *matHeaderCellDef><span class="visually-hidden">Ações</span></th>
+          <td mat-cell *matCellDef="let row" class="row-actions">
+            <button
+              mat-flat-button
+              type="button"
+              data-action="APPROVE"
+              [disabled]="isBusy()"
+              [attr.aria-label]="'Aprovar ' + row.title"
+              (click)="approve(row)"
+            >
+              Aprovar
+            </button>
+            <a
+              mat-button
+              [routerLink]="['/requests', row.id]"
+              [attr.aria-label]="'Abrir ' + row.title + ' para rejeitar ou solicitar ajustes'"
+            >
+              Abrir
+            </a>
+          </td>
+        </ng-container>
+
+        <tr mat-header-row *matHeaderRowDef="columns"></tr>
+        <tr mat-row *matRowDef="let row; columns: columns" [attr.data-request-id]="row.id"></tr>
+      </table>
+    </div>
+    <p class="muted hint">Para rejeitar ou solicitar ajustes, abra a solicitação.</p>
+  } @else {
+    <div class="empty" data-testid="inbox-empty">
+      <p>Nenhuma solicitação aguardando sua aprovação.</p>
+      <a mat-stroked-button routerLink="/requests">Ver solicitações</a>
+    </div>
+  }
+}

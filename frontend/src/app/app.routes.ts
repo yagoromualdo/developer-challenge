@@ -5,8 +5,6 @@ import { authGuard } from './core/guards/auth.guard';
 import { guestGuard } from './core/guards/guest.guard';
 import { roleGuard } from './core/guards/role.guard';
 
-const placeholder = () =>
-  import('./features/placeholder/placeholder-page').then((m) => m.PlaceholderPage);
 const requestForm = () =>
   import('./features/requests/request-form-page').then((m) => m.RequestFormPage);
 
@@ -55,8 +53,9 @@ export const routes: Routes = [
         path: 'approvals/inbox',
         title: 'Caixa de aprovação',
         canActivate: [roleGuard],
-        loadComponent: placeholder,
-        data: { heading: 'Caixa de aprovação', roles: APPROVER_ROLES },
+        loadComponent: () =>
+          import('./features/approvals/approval-inbox-page').then((m) => m.ApprovalInboxPage),
+        data: { roles: APPROVER_ROLES },
       },
     ],
   },
