@@ -886,3 +886,18 @@ One block per agent turn, one row per changed file:
 | `frontend/src/app/features/approvals/approvals.models.ts` | created | +24 | -0 |
 | `frontend/src/app/features/approvals/approvals.service.ts` | created | +15 | -0 |
 | `frontend/src/app/features/placeholder/placeholder-page.ts` | deleted | +0 | -14 |
+
+---
+### Turn 2026-11-16 19:51:56 -0300 · ClaudeCode
+- **Source**: command
+- **Session**: 5bbd23e2-3e3c-4ab9-9caf-f944a779a870
+- **Prompt**: Execute a etapa E32 do docs/plano-execucao.md. No nginx, o proxy_pass deve remover o prefixo /api. O compose precisa subir tudo num clone limpo, sem arquivo .env.
+- **Summary**: E32: add frontend Dockerfile (Node build -> nginx), nginx.conf with SPA fallback and /api/ proxy stripping the prefix, frontend service in compose and FRONTEND_HOST_PORT in .env.example
+
+| File | Change | Additions | Removals |
+|---|---|---|---|
+| `.env.example` | modified | +4 | -0 |
+| `docker-compose.yml` | modified | +10 | -0 |
+| `frontend/.dockerignore` | created | +9 | -0 |
+| `frontend/Dockerfile` | created | +23 | -0 |
+| `frontend/nginx.conf` | created | +34 | -0 |
