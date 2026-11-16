@@ -1,7 +1,7 @@
 {
   "_type": "export",
   "__export_format": 4,
-  "__export_date": "2026-11-15T00:00:00.000Z",
+  "__export_date": "2026-11-16T00:00:00.000Z",
   "__export_source": "insomnia.desktop.app:v10",
   "resources": [
     {
@@ -10,7 +10,7 @@
       "parentId": null,
       "name": "Purchase API — testes manuais",
       "scope": "collection",
-      "description": "Testes manuais da API de solicitações de compra (até a E12).\n\n## Preparação (uma vez)\n\n1. Suba o banco e o back-end:\n   - `docker compose up -d db`\n   - `cd backend && ./mvnw spring-boot:run`\n2. Crie o primeiro centro de custo (o `POST /cost-centers` exige um ADMIN, e até o seed da E22 não existe nenhum):\n   ```\n   docker compose exec db psql -U purchase -d purchase -c \"INSERT INTO cost_center (code, name, created_at) VALUES ('CC-TI-01', 'Tecnologia', now()) RETURNING id;\"\n   ```\n   Se o id devolvido não for 1, ajuste `cost_center_id` no ambiente.\n3. Rode a pasta **02 Cadastro** de cima para baixo (cria Maria, João, Admin e Aprovador).\n4. Promova o primeiro Admin pelo banco (o mesmo problema do ovo e da galinha do passo 2):\n   ```\n   docker compose exec db psql -U purchase -d purchase -c \"UPDATE app_user SET role = 'ADMIN', cost_center_id = NULL WHERE email = 'admin@example.com';\"\n   ```\n   O Aprovador já é promovido pela API: depois do login do Admin, rode **07 Usuários → Promover Aprovador** e então refaça o login do Aprovador (o papel só muda no token novo).\n5. Rode os logins da pasta **03 Login**. Um script pós-resposta (aba Scripts de cada login) grava o token em `token_maria`, `token_admin` ou `token_aprovador` no Base Environment. Como o token dura 15 min, refaça o login quando aparecer 401 inesperado.\n\nPara recomeçar do zero: `docker compose down -v` apaga o volume do banco.\n\n## Ambientes\n\n- **Local (back direto):** `base_url` = http://localhost:8080 (`./mvnw spring-boot:run`).\n- **Compose (via proxy do front):** `base_url` = http://localhost:4200/api, depois que o compose completo existir.\n\nNenhum token fica salvo no arquivo: os `token_*` começam vazios e são preenchidos pelos logins."
+      "description": "Testes manuais de todos os endpoints do back-end (E12 a E23), sobre os dados fictícios do seed (E22).\n\n## Preparação\n\n1. Suba tudo com o seed ligado (padrão do compose): `docker compose up -d --build`.\n   - Só o back, fora do compose: `docker compose up -d db` e, em `backend/`, `SEED_ENABLED=true ./mvnw spring-boot:run` (PowerShell: `$env:SEED_ENABLED='true'; ./mvnw spring-boot:run`).\n   - O seed só roda com o banco vazio. Para voltar ao estado inicial: `docker compose down -v` e suba de novo.\n2. Escolha o ambiente: **Local (back direto)** = http://localhost:8080 ou **Compose (via proxy do front)** = http://localhost:4200/api.\n3. Rode a pasta **01 Login (usuários do seed)**. Cada login tem um script pós-resposta (aba Scripts) que grava o `accessToken` em `token_<usuário>` no Base Environment; as outras requisições usam `{{ _.token_<usuário> }}`. O token dura 15 min: em 401 inesperado, refaça o login.\n\n## Usuários do seed (senha de todos: variável `senha`)\n\n- `admin@example.com` — Alice Administradora, ADMIN global (sem centro de custo) → `token_admin`\n- `admin2@example.com` — Bruno Administrador, segundo ADMIN global; decide a etapa ADMIN dos pedidos do outro ADMIN → `token_admin2`\n- `solicitante.ti@example.com` — Carla Solicitante, SOLICITANTE do CC-TI-01 → `token_solicitante_ti`\n- `aprovador1.ti@example.com` — Diego Aprovador N1, APROVADOR NIVEL_1 do CC-TI-01 → `token_aprovador1_ti`\n- `aprovador2.ti@example.com` — Elisa Aprovador N2, APROVADOR NIVEL_2 do CC-TI-01 → `token_aprovador2_ti`\n- `solicitante.mnt@example.com` — Fábio Solicitante, SOLICITANTE do CC-MNT-01 → `token_solicitante_mnt`\n- `aprovador1.mnt@example.com` — Gabriela Aprovador N1, APROVADOR NIVEL_1 do CC-MNT-01 → `token_aprovador1_mnt`\n- `aprovador2.mnt@example.com` — Heitor Aprovador N2, APROVADOR NIVEL_2 do CC-MNT-01 → `token_aprovador2_mnt`\n\nCentros de custo: CC-TI-01 (id 1, orçamento 50.000,00 no mês) e CC-MNT-01 (id 2, orçamento 8.000,00, quase esgotado).\n\n## Encadeamento\n\n- Nenhum token ou id fica fixo no arquivo: `token_*`, `request_id`, `lock_version` e afins começam vazios e são preenchidos pelos scripts pós-resposta.\n- Toda resposta com uma solicitação (criação, detalhe, edição e ações) grava `request_id` e `lock_version`. Por isso as pastas 09 a 16 devem ser rodadas **de cima para baixo**: cada passo usa o id e o lockVersion do anterior.\n- As pastas 15, 17 e 18 usam os ids fixos do seed (`seed_req_*`), válidos num banco recém-semeado. A pasta 15 muda o estado de algumas solicitações do seed; para repetir, recrie o banco.\n- `budget_month` deve ser a competência atual (o seed define os orçamentos no mês em que sobe)."
     },
     {
       "_id": "env_base",
@@ -19,14 +19,30 @@
       "name": "Base Environment",
       "data": {
         "base_url": "http://localhost:8080",
-        "cost_center_id": 1,
-        "senha": "Senha-Forte-123",
-        "token_maria": "",
+        "senha": "Senha@123",
+        "senha_nova": "Senha-Forte-123",
+        "cost_center_ti_id": 1,
+        "cost_center_mnt_id": 2,
+        "budget_month": "2026-11",
         "token_admin": "",
-        "token_aprovador": "",
-        "aprovador_id": "",
-        "cost_center_fin_id": "",
-        "budget_month": "2026-11"
+        "token_admin2": "",
+        "token_solicitante_ti": "",
+        "token_aprovador1_ti": "",
+        "token_aprovador2_ti": "",
+        "token_solicitante_mnt": "",
+        "token_aprovador1_mnt": "",
+        "token_aprovador2_mnt": "",
+        "request_id": "",
+        "lock_version": "",
+        "lock_version_antigo": "",
+        "idempotency_key": "",
+        "user_novo_id": "",
+        "cost_center_novo_id": "",
+        "seed_req_rascunho": 1,
+        "seed_req_licencas": 2,
+        "seed_req_notebooks": 3,
+        "seed_req_monitoramento": 9,
+        "seed_req_ferramentas": 12
       }
     },
     {
@@ -34,7 +50,9 @@
       "_type": "environment",
       "parentId": "env_base",
       "name": "Local (back direto)",
-      "data": { "base_url": "http://localhost:8080" },
+      "data": {
+        "base_url": "http://localhost:8080"
+      },
       "metaSortKey": 1
     },
     {
@@ -42,413 +60,3551 @@
       "_type": "environment",
       "parentId": "env_base",
       "name": "Compose (via proxy do front)",
-      "data": { "base_url": "http://localhost:4200/api" },
+      "data": {
+        "base_url": "http://localhost:4200/api"
+      },
       "metaSortKey": 2
     },
-
-    { "_id": "fld_infra", "_type": "request_group", "parentId": "wrk_purchase", "name": "01 Infraestrutura", "metaSortKey": 1, "description": "Rotas públicas, request id, 404 e 405 em Problem Details." },
-    { "_id": "fld_register", "_type": "request_group", "parentId": "wrk_purchase", "name": "02 Cadastro (/auth/register)", "metaSortKey": 2, "description": "Rode os quatro primeiros na ordem: eles criam os usuários usados no resto da coleção." },
-    { "_id": "fld_login", "_type": "request_group", "parentId": "wrk_purchase", "name": "03 Login (/auth/login)", "metaSortKey": 3, "description": "Os três primeiros alimentam token_maria, token_admin e token_aprovador." },
-    { "_id": "fld_me", "_type": "request_group", "parentId": "wrk_purchase", "name": "04 Sessão (/auth/me) e tokens inválidos", "metaSortKey": 4, "description": "Todo 401 deve vir em application/problem+json com code UNAUTHORIZED e header WWW-Authenticate: Bearer." },
-    { "_id": "fld_authz", "_type": "request_group", "parentId": "wrk_purchase", "name": "05 Autorização por papel (403)", "metaSortKey": 5, "description": "Rotas exclusivas de ADMIN (/users/**, POST /cost-centers, PUT de orçamento) são barradas no SecurityFilterChain, antes de o corpo ser lido." },
-    { "_id": "fld_cost_centers", "_type": "request_group", "parentId": "wrk_purchase", "name": "06 Centros de custo (/cost-centers)", "metaSortKey": 6, "description": "GET para qualquer autenticado; POST só ADMIN. O código é gravado em maiúsculas e é único sem diferenciar maiúsculas." },
-    { "_id": "fld_users", "_type": "request_group", "parentId": "wrk_purchase", "name": "07 Usuários (/users, ADMIN)", "metaSortKey": 7, "description": "Coerência de perfil: approverLevel só (e sempre) para APROVADOR; centro de custo obrigatório fora de ADMIN. Violação → 422 com code específico. O PATCH é parcial: campo ausente mantém o valor atual. O perfil novo só vale no próximo login (claims do JWT, ADR 007)." },
-    { "_id": "fld_budgets", "_type": "request_group", "parentId": "wrk_purchase", "name": "08 Orçamentos (/cost-centers/:id/budgets/:yyyy-mm)", "metaSortKey": 8, "description": "GET para qualquer autenticado; PUT só ADMIN. Valores em string com 2 casas. O PUT é um único INSERT ... ON CONFLICT DO UPDATE ... WHERE consumed <= novo valor (sem ler antes de gravar), então não há corrida com uma aprovação simultânea." },
-
     {
-      "_id": "req_health", "_type": "request", "parentId": "fld_infra", "metaSortKey": 1,
-      "name": "Health (público)", "method": "GET", "url": "{{ _.base_url }}/health",
-      "headers": [], "authentication": {}, "body": {},
-      "description": "Esperado: 200, status UP e components.db UP, sem token."
+      "_id": "fld_login",
+      "_type": "request_group",
+      "parentId": "wrk_purchase",
+      "name": "01 Login (usuários do seed)",
+      "description": "Os oito primeiros fazem login com cada usuário do seed e gravam o token em token_<usuário> (script pós-resposta). Rode-os antes de qualquer outra pasta.",
+      "metaSortKey": 1
     },
     {
-      "_id": "req_health_request_id", "_type": "request", "parentId": "fld_infra", "metaSortKey": 2,
-      "name": "Health com X-Request-Id próprio", "method": "GET", "url": "{{ _.base_url }}/health",
-      "headers": [{ "name": "X-Request-Id", "value": "meu-teste-123" }], "authentication": {}, "body": {},
-      "description": "Esperado: o header X-Request-Id da resposta volta igual a meu-teste-123. Sem o header, o back gera um UUID."
+      "_id": "req_login_admin",
+      "_type": "request",
+      "parentId": "fld_login",
+      "metaSortKey": 1,
+      "name": "Login Alice Administradora (admin@example.com) → 200",
+      "method": "POST",
+      "url": "{{ _.base_url }}/auth/login",
+      "headers": [
+        {
+          "name": "Content-Type",
+          "value": "application/json"
+        }
+      ],
+      "authentication": {},
+      "body": {
+        "mimeType": "application/json",
+        "text": "{\n  \"email\": \"admin@example.com\",\n  \"password\": \"{{ _.senha }}\"\n}"
+      },
+      "afterResponseScript": "let body;\ntry { body = insomnia.response.json(); } catch (e) { body = null; }\nif (body && body.accessToken !== undefined) {\n  insomnia.baseEnvironment.set('token_admin', body.accessToken);\n}",
+      "description": "ADMIN global (sem centro de custo). Esperado: 200 com accessToken, tokenType Bearer, expiresAt (+15 min) e user. O script pós-resposta grava o token em token_admin."
     },
     {
-      "_id": "req_api_docs", "_type": "request", "parentId": "fld_infra", "metaSortKey": 3,
-      "name": "OpenAPI (público)", "method": "GET", "url": "{{ _.base_url }}/v3/api-docs",
-      "headers": [], "authentication": {}, "body": {},
-      "description": "Esperado: 200, com components.securitySchemes.bearerAuth e os paths /auth/login, /auth/register e /auth/me. O Swagger UI fica em /swagger-ui/index.html (abra no navegador; tem o botão Authorize)."
+      "_id": "req_login_admin2",
+      "_type": "request",
+      "parentId": "fld_login",
+      "metaSortKey": 2,
+      "name": "Login Bruno Administrador (admin2@example.com) → 200",
+      "method": "POST",
+      "url": "{{ _.base_url }}/auth/login",
+      "headers": [
+        {
+          "name": "Content-Type",
+          "value": "application/json"
+        }
+      ],
+      "authentication": {},
+      "body": {
+        "mimeType": "application/json",
+        "text": "{\n  \"email\": \"admin2@example.com\",\n  \"password\": \"{{ _.senha }}\"\n}"
+      },
+      "afterResponseScript": "let body;\ntry { body = insomnia.response.json(); } catch (e) { body = null; }\nif (body && body.accessToken !== undefined) {\n  insomnia.baseEnvironment.set('token_admin2', body.accessToken);\n}",
+      "description": "segundo ADMIN global; decide a etapa ADMIN dos pedidos do outro ADMIN. Esperado: 200 com accessToken, tokenType Bearer, expiresAt (+15 min) e user. O script pós-resposta grava o token em token_admin2."
     },
     {
-      "_id": "req_404_sem_token", "_type": "request", "parentId": "fld_infra", "metaSortKey": 4,
-      "name": "Rota inexistente sem token → 401", "method": "GET", "url": "{{ _.base_url }}/rota-inexistente",
-      "headers": [], "authentication": {}, "body": {},
-      "description": "Esperado: 401 UNAUTHORIZED. A autenticação é checada antes de descobrir se a rota existe (não revela o mapa da API)."
+      "_id": "req_login_solicitante_ti",
+      "_type": "request",
+      "parentId": "fld_login",
+      "metaSortKey": 3,
+      "name": "Login Carla Solicitante (solicitante.ti@example.com) → 200",
+      "method": "POST",
+      "url": "{{ _.base_url }}/auth/login",
+      "headers": [
+        {
+          "name": "Content-Type",
+          "value": "application/json"
+        }
+      ],
+      "authentication": {},
+      "body": {
+        "mimeType": "application/json",
+        "text": "{\n  \"email\": \"solicitante.ti@example.com\",\n  \"password\": \"{{ _.senha }}\"\n}"
+      },
+      "afterResponseScript": "let body;\ntry { body = insomnia.response.json(); } catch (e) { body = null; }\nif (body && body.accessToken !== undefined) {\n  insomnia.baseEnvironment.set('token_solicitante_ti', body.accessToken);\n}",
+      "description": "SOLICITANTE do CC-TI-01. Esperado: 200 com accessToken, tokenType Bearer, expiresAt (+15 min) e user. O script pós-resposta grava o token em token_solicitante_ti."
     },
     {
-      "_id": "req_404_com_token", "_type": "request", "parentId": "fld_infra", "metaSortKey": 5,
-      "name": "Rota inexistente com token → 404", "method": "GET", "url": "{{ _.base_url }}/rota-inexistente",
-      "headers": [], "authentication": { "type": "bearer", "token": "{{ _.token_maria }}" }, "body": {},
-      "description": "Esperado: 404 NOT_FOUND em problem+json."
+      "_id": "req_login_aprovador1_ti",
+      "_type": "request",
+      "parentId": "fld_login",
+      "metaSortKey": 4,
+      "name": "Login Diego Aprovador N1 (aprovador1.ti@example.com) → 200",
+      "method": "POST",
+      "url": "{{ _.base_url }}/auth/login",
+      "headers": [
+        {
+          "name": "Content-Type",
+          "value": "application/json"
+        }
+      ],
+      "authentication": {},
+      "body": {
+        "mimeType": "application/json",
+        "text": "{\n  \"email\": \"aprovador1.ti@example.com\",\n  \"password\": \"{{ _.senha }}\"\n}"
+      },
+      "afterResponseScript": "let body;\ntry { body = insomnia.response.json(); } catch (e) { body = null; }\nif (body && body.accessToken !== undefined) {\n  insomnia.baseEnvironment.set('token_aprovador1_ti', body.accessToken);\n}",
+      "description": "APROVADOR NIVEL_1 do CC-TI-01. Esperado: 200 com accessToken, tokenType Bearer, expiresAt (+15 min) e user. O script pós-resposta grava o token em token_aprovador1_ti."
     },
     {
-      "_id": "req_405", "_type": "request", "parentId": "fld_infra", "metaSortKey": 6,
-      "name": "GET em /auth/login com token → 405", "method": "GET", "url": "{{ _.base_url }}/auth/login",
-      "headers": [], "authentication": { "type": "bearer", "token": "{{ _.token_maria }}" }, "body": {},
-      "description": "Esperado: 405 METHOD_NOT_ALLOWED em problem+json. Sem token seria 401, porque só o POST é público."
-    },
-
-    {
-      "_id": "req_register_maria", "_type": "request", "parentId": "fld_register", "metaSortKey": 1,
-      "name": "Cadastrar Maria (SOLICITANTE) → 201", "method": "POST", "url": "{{ _.base_url }}/auth/register",
-      "headers": [{ "name": "Content-Type", "value": "application/json" }], "authentication": {},
-      "body": { "mimeType": "application/json", "text": "{\n  \"name\": \"Maria Solicitante\",\n  \"email\": \"maria@example.com\",\n  \"password\": \"{{ _.senha }}\",\n  \"costCenterId\": {{ _.cost_center_id }}\n}" },
-      "description": "Esperado: 201 com role SOLICITANTE, approverLevel null e nenhum campo de senha ou hash."
-    },
-    {
-      "_id": "req_register_joao_admin", "_type": "request", "parentId": "fld_register", "metaSortKey": 2,
-      "name": "Cadastrar pedindo role ADMIN → 201 como SOLICITANTE", "method": "POST", "url": "{{ _.base_url }}/auth/register",
-      "headers": [{ "name": "Content-Type", "value": "application/json" }], "authentication": {},
-      "body": { "mimeType": "application/json", "text": "{\n  \"name\": \"João Espertinho\",\n  \"email\": \"Joao@Example.com\",\n  \"password\": \"{{ _.senha }}\",\n  \"costCenterId\": {{ _.cost_center_id }},\n  \"role\": \"ADMIN\",\n  \"approverLevel\": \"NIVEL_2\"\n}" },
-      "description": "Esperado: 201 com role SOLICITANTE e approverLevel null (campos extras ignorados). O e-mail volta normalizado: joao@example.com."
-    },
-    {
-      "_id": "req_register_admin", "_type": "request", "parentId": "fld_register", "metaSortKey": 3,
-      "name": "Cadastrar futuro Admin → 201", "method": "POST", "url": "{{ _.base_url }}/auth/register",
-      "headers": [{ "name": "Content-Type", "value": "application/json" }], "authentication": {},
-      "body": { "mimeType": "application/json", "text": "{\n  \"name\": \"Ana Admin\",\n  \"email\": \"admin@example.com\",\n  \"password\": \"{{ _.senha }}\",\n  \"costCenterId\": {{ _.cost_center_id }}\n}" },
-      "description": "Nasce SOLICITANTE. Depois rode o UPDATE do passo 4 da preparação (descrição da coleção) para virar ADMIN global."
+      "_id": "req_login_aprovador2_ti",
+      "_type": "request",
+      "parentId": "fld_login",
+      "metaSortKey": 5,
+      "name": "Login Elisa Aprovador N2 (aprovador2.ti@example.com) → 200",
+      "method": "POST",
+      "url": "{{ _.base_url }}/auth/login",
+      "headers": [
+        {
+          "name": "Content-Type",
+          "value": "application/json"
+        }
+      ],
+      "authentication": {},
+      "body": {
+        "mimeType": "application/json",
+        "text": "{\n  \"email\": \"aprovador2.ti@example.com\",\n  \"password\": \"{{ _.senha }}\"\n}"
+      },
+      "afterResponseScript": "let body;\ntry { body = insomnia.response.json(); } catch (e) { body = null; }\nif (body && body.accessToken !== undefined) {\n  insomnia.baseEnvironment.set('token_aprovador2_ti', body.accessToken);\n}",
+      "description": "APROVADOR NIVEL_2 do CC-TI-01. Esperado: 200 com accessToken, tokenType Bearer, expiresAt (+15 min) e user. O script pós-resposta grava o token em token_aprovador2_ti."
     },
     {
-      "_id": "req_register_aprovador", "_type": "request", "parentId": "fld_register", "metaSortKey": 4,
-      "name": "Cadastrar futuro Aprovador → 201", "method": "POST", "url": "{{ _.base_url }}/auth/register",
-      "headers": [{ "name": "Content-Type", "value": "application/json" }], "authentication": {},
-      "body": { "mimeType": "application/json", "text": "{\n  \"name\": \"Paulo Aprovador\",\n  \"email\": \"aprovador@example.com\",\n  \"password\": \"{{ _.senha }}\",\n  \"costCenterId\": {{ _.cost_center_id }}\n}" },
-      "afterResponseScript": "const body = insomnia.response.json();\nif (body && body.id) {\n  insomnia.baseEnvironment.set('aprovador_id', body.id);\n}",
-      "description": "Nasce SOLICITANTE. O script pós-resposta grava o id em aprovador_id; a promoção a APROVADOR NIVEL_2 é feita em 07 Usuários → Promover Aprovador."
+      "_id": "req_login_solicitante_mnt",
+      "_type": "request",
+      "parentId": "fld_login",
+      "metaSortKey": 6,
+      "name": "Login Fábio Solicitante (solicitante.mnt@example.com) → 200",
+      "method": "POST",
+      "url": "{{ _.base_url }}/auth/login",
+      "headers": [
+        {
+          "name": "Content-Type",
+          "value": "application/json"
+        }
+      ],
+      "authentication": {},
+      "body": {
+        "mimeType": "application/json",
+        "text": "{\n  \"email\": \"solicitante.mnt@example.com\",\n  \"password\": \"{{ _.senha }}\"\n}"
+      },
+      "afterResponseScript": "let body;\ntry { body = insomnia.response.json(); } catch (e) { body = null; }\nif (body && body.accessToken !== undefined) {\n  insomnia.baseEnvironment.set('token_solicitante_mnt', body.accessToken);\n}",
+      "description": "SOLICITANTE do CC-MNT-01. Esperado: 200 com accessToken, tokenType Bearer, expiresAt (+15 min) e user. O script pós-resposta grava o token em token_solicitante_mnt."
     },
     {
-      "_id": "req_register_duplicado", "_type": "request", "parentId": "fld_register", "metaSortKey": 5,
-      "name": "E-mail já cadastrado (maiúsculas) → 422", "method": "POST", "url": "{{ _.base_url }}/auth/register",
-      "headers": [{ "name": "Content-Type", "value": "application/json" }], "authentication": {},
-      "body": { "mimeType": "application/json", "text": "{\n  \"name\": \"Maria de Novo\",\n  \"email\": \"MARIA@example.com\",\n  \"password\": \"{{ _.senha }}\",\n  \"costCenterId\": {{ _.cost_center_id }}\n}" },
-      "description": "Esperado: 422 EMAIL_ALREADY_REGISTERED (a comparação ignora maiúsculas)."
+      "_id": "req_login_aprovador1_mnt",
+      "_type": "request",
+      "parentId": "fld_login",
+      "metaSortKey": 7,
+      "name": "Login Gabriela Aprovador N1 (aprovador1.mnt@example.com) → 200",
+      "method": "POST",
+      "url": "{{ _.base_url }}/auth/login",
+      "headers": [
+        {
+          "name": "Content-Type",
+          "value": "application/json"
+        }
+      ],
+      "authentication": {},
+      "body": {
+        "mimeType": "application/json",
+        "text": "{\n  \"email\": \"aprovador1.mnt@example.com\",\n  \"password\": \"{{ _.senha }}\"\n}"
+      },
+      "afterResponseScript": "let body;\ntry { body = insomnia.response.json(); } catch (e) { body = null; }\nif (body && body.accessToken !== undefined) {\n  insomnia.baseEnvironment.set('token_aprovador1_mnt', body.accessToken);\n}",
+      "description": "APROVADOR NIVEL_1 do CC-MNT-01. Esperado: 200 com accessToken, tokenType Bearer, expiresAt (+15 min) e user. O script pós-resposta grava o token em token_aprovador1_mnt."
     },
     {
-      "_id": "req_register_cc_inexistente", "_type": "request", "parentId": "fld_register", "metaSortKey": 6,
-      "name": "Centro de custo inexistente → 422", "method": "POST", "url": "{{ _.base_url }}/auth/register",
-      "headers": [{ "name": "Content-Type", "value": "application/json" }], "authentication": {},
-      "body": { "mimeType": "application/json", "text": "{\n  \"name\": \"Carla\",\n  \"email\": \"carla@example.com\",\n  \"password\": \"{{ _.senha }}\",\n  \"costCenterId\": 99999\n}" },
-      "description": "Esperado: 422 COST_CENTER_NOT_FOUND."
+      "_id": "req_login_aprovador2_mnt",
+      "_type": "request",
+      "parentId": "fld_login",
+      "metaSortKey": 8,
+      "name": "Login Heitor Aprovador N2 (aprovador2.mnt@example.com) → 200",
+      "method": "POST",
+      "url": "{{ _.base_url }}/auth/login",
+      "headers": [
+        {
+          "name": "Content-Type",
+          "value": "application/json"
+        }
+      ],
+      "authentication": {},
+      "body": {
+        "mimeType": "application/json",
+        "text": "{\n  \"email\": \"aprovador2.mnt@example.com\",\n  \"password\": \"{{ _.senha }}\"\n}"
+      },
+      "afterResponseScript": "let body;\ntry { body = insomnia.response.json(); } catch (e) { body = null; }\nif (body && body.accessToken !== undefined) {\n  insomnia.baseEnvironment.set('token_aprovador2_mnt', body.accessToken);\n}",
+      "description": "APROVADOR NIVEL_2 do CC-MNT-01. Esperado: 200 com accessToken, tokenType Bearer, expiresAt (+15 min) e user. O script pós-resposta grava o token em token_aprovador2_mnt."
     },
     {
-      "_id": "req_register_invalido", "_type": "request", "parentId": "fld_register", "metaSortKey": 7,
-      "name": "Campos inválidos → 400 com errors[]", "method": "POST", "url": "{{ _.base_url }}/auth/register",
-      "headers": [{ "name": "Content-Type", "value": "application/json" }], "authentication": {},
-      "body": { "mimeType": "application/json", "text": "{\n  \"name\": \"\",\n  \"email\": \"nao-e-email\",\n  \"password\": \"curta12\",\n  \"costCenterId\": -1\n}" },
-      "description": "Esperado: 400 VALIDATION_FAILED com errors[] para costCenterId, email, name e password. A senha enviada (curta12) não aparece na resposta."
+      "_id": "req_login_normalizado",
+      "_type": "request",
+      "parentId": "fld_login",
+      "metaSortKey": 9,
+      "name": "E-mail com maiúsculas e espaços → 200",
+      "method": "POST",
+      "url": "{{ _.base_url }}/auth/login",
+      "headers": [
+        {
+          "name": "Content-Type",
+          "value": "application/json"
+        }
+      ],
+      "authentication": {},
+      "body": {
+        "mimeType": "application/json",
+        "text": "{\n  \"email\": \"  SOLICITANTE.TI@Example.com \",\n  \"password\": \"{{ _.senha }}\"\n}"
+      },
+      "description": "Esperado: 200. O e-mail é normalizado (trim + minúsculas) antes da busca. Não grava token."
     },
     {
-      "_id": "req_register_senha_72", "_type": "request", "parentId": "fld_register", "metaSortKey": 8,
-      "name": "Senha acima de 72 bytes → 400", "method": "POST", "url": "{{ _.base_url }}/auth/register",
-      "headers": [{ "name": "Content-Type", "value": "application/json" }], "authentication": {},
-      "body": { "mimeType": "application/json", "text": "{\n  \"name\": \"Bruno\",\n  \"email\": \"bruno@example.com\",\n  \"password\": \"éééééééééééééééééééééééééééééééééééééééé\",\n  \"costCenterId\": {{ _.cost_center_id }}\n}" },
-      "description": "40 caracteres, mas 80 bytes em UTF-8 (limite do bcrypt é 72 bytes). Esperado: 400 com erro no campo password."
-    },
-    {
-      "_id": "req_register_json_malformado", "_type": "request", "parentId": "fld_register", "metaSortKey": 9,
-      "name": "JSON malformado → 400", "method": "POST", "url": "{{ _.base_url }}/auth/register",
-      "headers": [{ "name": "Content-Type", "value": "application/json" }], "authentication": {},
-      "body": { "mimeType": "application/json", "text": "{ \"name\": \"Maria\", " },
-      "description": "Esperado: 400 MALFORMED_REQUEST, sem detalhes internos do parser."
-    },
-
-    {
-      "_id": "req_login_maria", "_type": "request", "parentId": "fld_login", "metaSortKey": 1,
-      "name": "Login Maria (SOLICITANTE) → 200", "method": "POST", "url": "{{ _.base_url }}/auth/login",
-      "headers": [{ "name": "Content-Type", "value": "application/json" }], "authentication": {},
-      "body": { "mimeType": "application/json", "text": "{\n  \"email\": \"maria@example.com\",\n  \"password\": \"{{ _.senha }}\"\n}" },
-      "afterResponseScript": "const body = insomnia.response.json();\nif (body && body.accessToken) {\n  insomnia.baseEnvironment.set('token_maria', body.accessToken);\n}",
-      "description": "Esperado: 200 com accessToken, tokenType Bearer, expiresAt (+15 min) e user. O script pós-resposta grava o token em token_maria."
-    },
-    {
-      "_id": "req_login_admin", "_type": "request", "parentId": "fld_login", "metaSortKey": 2,
-      "name": "Login Admin → 200", "method": "POST", "url": "{{ _.base_url }}/auth/login",
-      "headers": [{ "name": "Content-Type", "value": "application/json" }], "authentication": {},
-      "body": { "mimeType": "application/json", "text": "{\n  \"email\": \"admin@example.com\",\n  \"password\": \"{{ _.senha }}\"\n}" },
-      "afterResponseScript": "const body = insomnia.response.json();\nif (body && body.accessToken) {\n  insomnia.baseEnvironment.set('token_admin', body.accessToken);\n}",
-      "description": "Depois do UPDATE do passo 4: user.role ADMIN e costCenterId null. O script pós-resposta grava o token em token_admin."
-    },
-    {
-      "_id": "req_login_aprovador", "_type": "request", "parentId": "fld_login", "metaSortKey": 3,
-      "name": "Login Aprovador → 200", "method": "POST", "url": "{{ _.base_url }}/auth/login",
-      "headers": [{ "name": "Content-Type", "value": "application/json" }], "authentication": {},
-      "body": { "mimeType": "application/json", "text": "{\n  \"email\": \"aprovador@example.com\",\n  \"password\": \"{{ _.senha }}\"\n}" },
-      "afterResponseScript": "const body = insomnia.response.json();\nif (body && body.accessToken) {\n  insomnia.baseEnvironment.set('token_aprovador', body.accessToken);\n}",
-      "description": "Depois do UPDATE do passo 4: user.role APROVADOR e approverLevel NIVEL_2. O script pós-resposta grava o token em token_aprovador."
-    },
-    {
-      "_id": "req_login_normalizado", "_type": "request", "parentId": "fld_login", "metaSortKey": 4,
-      "name": "E-mail com maiúsculas e espaços → 200", "method": "POST", "url": "{{ _.base_url }}/auth/login",
-      "headers": [{ "name": "Content-Type", "value": "application/json" }], "authentication": {},
-      "body": { "mimeType": "application/json", "text": "{\n  \"email\": \"  MARIA@Example.com \",\n  \"password\": \"{{ _.senha }}\"\n}" },
-      "description": "Esperado: 200. O e-mail é normalizado (trim + minúsculas) antes da busca."
-    },
-    {
-      "_id": "req_login_senha_errada", "_type": "request", "parentId": "fld_login", "metaSortKey": 5,
-      "name": "Senha errada → 401", "method": "POST", "url": "{{ _.base_url }}/auth/login",
-      "headers": [{ "name": "Content-Type", "value": "application/json" }], "authentication": {},
-      "body": { "mimeType": "application/json", "text": "{\n  \"email\": \"maria@example.com\",\n  \"password\": \"senha-errada\"\n}" },
+      "_id": "req_login_senha_errada",
+      "_type": "request",
+      "parentId": "fld_login",
+      "metaSortKey": 10,
+      "name": "Senha errada → 401",
+      "method": "POST",
+      "url": "{{ _.base_url }}/auth/login",
+      "headers": [
+        {
+          "name": "Content-Type",
+          "value": "application/json"
+        }
+      ],
+      "authentication": {},
+      "body": {
+        "mimeType": "application/json",
+        "text": "{\n  \"email\": \"solicitante.ti@example.com\",\n  \"password\": \"senha-errada\"\n}"
+      },
       "description": "Esperado: 401 INVALID_CREDENTIALS, detail \"E-mail ou senha inválidos.\""
     },
     {
-      "_id": "req_login_inexistente", "_type": "request", "parentId": "fld_login", "metaSortKey": 6,
-      "name": "E-mail inexistente → 401 (mesma mensagem)", "method": "POST", "url": "{{ _.base_url }}/auth/login",
-      "headers": [{ "name": "Content-Type", "value": "application/json" }], "authentication": {},
-      "body": { "mimeType": "application/json", "text": "{\n  \"email\": \"ninguem@example.com\",\n  \"password\": \"senha-errada\"\n}" },
+      "_id": "req_login_inexistente",
+      "_type": "request",
+      "parentId": "fld_login",
+      "metaSortKey": 11,
+      "name": "E-mail inexistente → 401 (mesma mensagem)",
+      "method": "POST",
+      "url": "{{ _.base_url }}/auth/login",
+      "headers": [
+        {
+          "name": "Content-Type",
+          "value": "application/json"
+        }
+      ],
+      "authentication": {},
+      "body": {
+        "mimeType": "application/json",
+        "text": "{\n  \"email\": \"ninguem@example.com\",\n  \"password\": \"senha-errada\"\n}"
+      },
       "description": "Esperado: exatamente o mesmo title e detail da senha errada (não revela quais e-mails existem)."
     },
     {
-      "_id": "req_login_senha_72", "_type": "request", "parentId": "fld_login", "metaSortKey": 7,
-      "name": "Senha acima de 72 bytes → 401", "method": "POST", "url": "{{ _.base_url }}/auth/login",
-      "headers": [{ "name": "Content-Type", "value": "application/json" }], "authentication": {},
-      "body": { "mimeType": "application/json", "text": "{\n  \"email\": \"maria@example.com\",\n  \"password\": \"éééééééééééééééééééééééééééééééééééééééé\"\n}" },
+      "_id": "req_login_senha_72",
+      "_type": "request",
+      "parentId": "fld_login",
+      "metaSortKey": 12,
+      "name": "Senha acima de 72 bytes → 401",
+      "method": "POST",
+      "url": "{{ _.base_url }}/auth/login",
+      "headers": [
+        {
+          "name": "Content-Type",
+          "value": "application/json"
+        }
+      ],
+      "authentication": {},
+      "body": {
+        "mimeType": "application/json",
+        "text": "{\n  \"email\": \"solicitante.ti@example.com\",\n  \"password\": \"éééééééééééééééééééééééééééééééééééééééé\"\n}"
+      },
       "description": "Esperado: 401 INVALID_CREDENTIALS (e não 500 do bcrypt)."
     },
     {
-      "_id": "req_login_vazio", "_type": "request", "parentId": "fld_login", "metaSortKey": 8,
-      "name": "Campos vazios → 400", "method": "POST", "url": "{{ _.base_url }}/auth/login",
-      "headers": [{ "name": "Content-Type", "value": "application/json" }], "authentication": {},
-      "body": { "mimeType": "application/json", "text": "{\n  \"email\": \"\",\n  \"password\": \"\"\n}" },
+      "_id": "req_login_vazio",
+      "_type": "request",
+      "parentId": "fld_login",
+      "metaSortKey": 13,
+      "name": "Campos vazios → 400",
+      "method": "POST",
+      "url": "{{ _.base_url }}/auth/login",
+      "headers": [
+        {
+          "name": "Content-Type",
+          "value": "application/json"
+        }
+      ],
+      "authentication": {},
+      "body": {
+        "mimeType": "application/json",
+        "text": "{\n  \"email\": \"\",\n  \"password\": \"\"\n}"
+      },
       "description": "Esperado: 400 VALIDATION_FAILED com errors[] para email e password."
     },
     {
-      "_id": "req_login_token_ruim", "_type": "request", "parentId": "fld_login", "metaSortKey": 9,
-      "name": "Login enviando Bearer inválido → 401", "method": "POST", "url": "{{ _.base_url }}/auth/login",
-      "headers": [{ "name": "Content-Type", "value": "application/json" }], "authentication": { "type": "bearer", "token": "nao-e-um-jwt" },
-      "body": { "mimeType": "application/json", "text": "{\n  \"email\": \"maria@example.com\",\n  \"password\": \"{{ _.senha }}\"\n}" },
+      "_id": "req_login_token_ruim",
+      "_type": "request",
+      "parentId": "fld_login",
+      "metaSortKey": 14,
+      "name": "Login enviando Bearer inválido → 401",
+      "method": "POST",
+      "url": "{{ _.base_url }}/auth/login",
+      "headers": [
+        {
+          "name": "Content-Type",
+          "value": "application/json"
+        }
+      ],
+      "authentication": {
+        "type": "bearer",
+        "token": "nao-e-um-jwt"
+      },
+      "body": {
+        "mimeType": "application/json",
+        "text": "{\n  \"email\": \"solicitante.ti@example.com\",\n  \"password\": \"{{ _.senha }}\"\n}"
+      },
       "description": "Mesmo numa rota pública, um header Authorization com token inválido é rejeitado: 401 UNAUTHORIZED. Comportamento padrão do Resource Server; o front não deve mandar token no login."
     },
-
     {
-      "_id": "req_me_maria", "_type": "request", "parentId": "fld_me", "metaSortKey": 1,
-      "name": "Me (Maria) → 200", "method": "GET", "url": "{{ _.base_url }}/auth/me",
-      "headers": [], "authentication": { "type": "bearer", "token": "{{ _.token_maria }}" }, "body": {},
-      "description": "Esperado: 200 com id, name, email, role SOLICITANTE, approverLevel null, costCenterId. Sem senha nem hash."
+      "_id": "fld_infra",
+      "_type": "request_group",
+      "parentId": "wrk_purchase",
+      "name": "02 Infraestrutura",
+      "description": "Rotas públicas, request id, 404 e 405 em Problem Details.",
+      "metaSortKey": 2
     },
     {
-      "_id": "req_me_admin", "_type": "request", "parentId": "fld_me", "metaSortKey": 2,
-      "name": "Me (Admin) → 200", "method": "GET", "url": "{{ _.base_url }}/auth/me",
-      "headers": [], "authentication": { "type": "bearer", "token": "{{ _.token_admin }}" }, "body": {},
+      "_id": "req_health",
+      "_type": "request",
+      "parentId": "fld_infra",
+      "metaSortKey": 1,
+      "name": "Health (público)",
+      "method": "GET",
+      "url": "{{ _.base_url }}/health",
+      "headers": [],
+      "authentication": {},
+      "body": {},
+      "description": "Esperado: 200, status UP e components.db UP, sem token."
+    },
+    {
+      "_id": "req_health_request_id",
+      "_type": "request",
+      "parentId": "fld_infra",
+      "metaSortKey": 2,
+      "name": "Health com X-Request-Id próprio",
+      "method": "GET",
+      "url": "{{ _.base_url }}/health",
+      "headers": [
+        {
+          "name": "X-Request-Id",
+          "value": "meu-teste-123"
+        }
+      ],
+      "authentication": {},
+      "body": {},
+      "description": "Esperado: o header X-Request-Id da resposta volta igual a meu-teste-123. Sem o header, o back gera um UUID."
+    },
+    {
+      "_id": "req_api_docs",
+      "_type": "request",
+      "parentId": "fld_infra",
+      "metaSortKey": 3,
+      "name": "OpenAPI (público)",
+      "method": "GET",
+      "url": "{{ _.base_url }}/v3/api-docs",
+      "headers": [],
+      "authentication": {},
+      "body": {},
+      "description": "Esperado: 200 com components.securitySchemes.bearerAuth e todos os paths da API. O Swagger UI fica em /swagger-ui/index.html (abra no navegador; tem o botão Authorize)."
+    },
+    {
+      "_id": "req_404_sem_token",
+      "_type": "request",
+      "parentId": "fld_infra",
+      "metaSortKey": 4,
+      "name": "Rota inexistente sem token → 401",
+      "method": "GET",
+      "url": "{{ _.base_url }}/rota-inexistente",
+      "headers": [],
+      "authentication": {},
+      "body": {},
+      "description": "Esperado: 401 UNAUTHORIZED. A autenticação é checada antes de descobrir se a rota existe (não revela o mapa da API)."
+    },
+    {
+      "_id": "req_404_com_token",
+      "_type": "request",
+      "parentId": "fld_infra",
+      "metaSortKey": 5,
+      "name": "Rota inexistente com token → 404",
+      "method": "GET",
+      "url": "{{ _.base_url }}/rota-inexistente",
+      "headers": [],
+      "authentication": {
+        "type": "bearer",
+        "token": "{{ _.token_solicitante_ti }}"
+      },
+      "body": {},
+      "description": "Esperado: 404 NOT_FOUND em problem+json."
+    },
+    {
+      "_id": "req_405",
+      "_type": "request",
+      "parentId": "fld_infra",
+      "metaSortKey": 6,
+      "name": "GET em /auth/login com token → 405",
+      "method": "GET",
+      "url": "{{ _.base_url }}/auth/login",
+      "headers": [],
+      "authentication": {
+        "type": "bearer",
+        "token": "{{ _.token_solicitante_ti }}"
+      },
+      "body": {},
+      "description": "Esperado: 405 METHOD_NOT_ALLOWED em problem+json. Sem token seria 401, porque só o POST é público."
+    },
+    {
+      "_id": "req_415",
+      "_type": "request",
+      "parentId": "fld_infra",
+      "metaSortKey": 7,
+      "name": "Criar solicitação com text/plain → 415",
+      "method": "POST",
+      "url": "{{ _.base_url }}/requests",
+      "headers": [
+        {
+          "name": "Content-Type",
+          "value": "text/plain"
+        }
+      ],
+      "authentication": {
+        "type": "bearer",
+        "token": "{{ _.token_solicitante_ti }}"
+      },
+      "body": {
+        "mimeType": "text/plain",
+        "text": "titulo=Teste"
+      },
+      "description": "Esperado: 415 UNSUPPORTED_MEDIA_TYPE em problem+json."
+    },
+    {
+      "_id": "fld_register",
+      "_type": "request_group",
+      "parentId": "wrk_purchase",
+      "name": "03 Cadastro (/auth/register)",
+      "description": "Autocadastro público: sempre nasce SOLICITANTE. Os dois primeiros criam usuários novos; rodar de novo dá 422 EMAIL_ALREADY_REGISTERED (troque o e-mail ou recrie o banco).",
+      "metaSortKey": 3
+    },
+    {
+      "_id": "req_register_novo",
+      "_type": "request",
+      "parentId": "fld_register",
+      "metaSortKey": 1,
+      "name": "Cadastrar Nina (SOLICITANTE no CC-TI-01) → 201",
+      "method": "POST",
+      "url": "{{ _.base_url }}/auth/register",
+      "headers": [
+        {
+          "name": "Content-Type",
+          "value": "application/json"
+        }
+      ],
+      "authentication": {},
+      "body": {
+        "mimeType": "application/json",
+        "text": "{\n  \"name\": \"Nina Nova\",\n  \"email\": \"nina@example.com\",\n  \"password\": \"{{ _.senha_nova }}\",\n  \"costCenterId\": {{ _.cost_center_ti_id }}\n}"
+      },
+      "description": "Esperado: 201 com role SOLICITANTE, approverLevel null e nenhum campo de senha ou hash."
+    },
+    {
+      "_id": "req_register_pede_admin",
+      "_type": "request",
+      "parentId": "fld_register",
+      "metaSortKey": 2,
+      "name": "Cadastrar pedindo role ADMIN → 201 como SOLICITANTE",
+      "method": "POST",
+      "url": "{{ _.base_url }}/auth/register",
+      "headers": [
+        {
+          "name": "Content-Type",
+          "value": "application/json"
+        }
+      ],
+      "authentication": {},
+      "body": {
+        "mimeType": "application/json",
+        "text": "{\n  \"name\": \"João Espertinho\",\n  \"email\": \"Joao@Example.com\",\n  \"password\": \"{{ _.senha_nova }}\",\n  \"costCenterId\": {{ _.cost_center_ti_id }},\n  \"role\": \"ADMIN\",\n  \"approverLevel\": \"NIVEL_2\"\n}"
+      },
+      "description": "Esperado: 201 com role SOLICITANTE e approverLevel null (campos extras ignorados). O e-mail volta normalizado: joao@example.com."
+    },
+    {
+      "_id": "req_register_duplicado",
+      "_type": "request",
+      "parentId": "fld_register",
+      "metaSortKey": 3,
+      "name": "E-mail do seed (maiúsculas) → 422",
+      "method": "POST",
+      "url": "{{ _.base_url }}/auth/register",
+      "headers": [
+        {
+          "name": "Content-Type",
+          "value": "application/json"
+        }
+      ],
+      "authentication": {},
+      "body": {
+        "mimeType": "application/json",
+        "text": "{\n  \"name\": \"Admin de Novo\",\n  \"email\": \"ADMIN@example.com\",\n  \"password\": \"{{ _.senha_nova }}\",\n  \"costCenterId\": {{ _.cost_center_ti_id }}\n}"
+      },
+      "description": "Esperado: 422 EMAIL_ALREADY_REGISTERED (a comparação ignora maiúsculas)."
+    },
+    {
+      "_id": "req_register_cc_inexistente",
+      "_type": "request",
+      "parentId": "fld_register",
+      "metaSortKey": 4,
+      "name": "Centro de custo inexistente → 422",
+      "method": "POST",
+      "url": "{{ _.base_url }}/auth/register",
+      "headers": [
+        {
+          "name": "Content-Type",
+          "value": "application/json"
+        }
+      ],
+      "authentication": {},
+      "body": {
+        "mimeType": "application/json",
+        "text": "{\n  \"name\": \"Otávio\",\n  \"email\": \"otavio@example.com\",\n  \"password\": \"{{ _.senha_nova }}\",\n  \"costCenterId\": 99999\n}"
+      },
+      "description": "Esperado: 422 COST_CENTER_NOT_FOUND."
+    },
+    {
+      "_id": "req_register_invalido",
+      "_type": "request",
+      "parentId": "fld_register",
+      "metaSortKey": 5,
+      "name": "Campos inválidos → 400 com errors[]",
+      "method": "POST",
+      "url": "{{ _.base_url }}/auth/register",
+      "headers": [
+        {
+          "name": "Content-Type",
+          "value": "application/json"
+        }
+      ],
+      "authentication": {},
+      "body": {
+        "mimeType": "application/json",
+        "text": "{\n  \"name\": \"\",\n  \"email\": \"nao-e-email\",\n  \"password\": \"curta12\",\n  \"costCenterId\": -1\n}"
+      },
+      "description": "Esperado: 400 VALIDATION_FAILED com errors[] para costCenterId, email, name e password. A senha enviada (curta12) não aparece na resposta."
+    },
+    {
+      "_id": "req_register_senha_72",
+      "_type": "request",
+      "parentId": "fld_register",
+      "metaSortKey": 6,
+      "name": "Senha acima de 72 bytes → 400",
+      "method": "POST",
+      "url": "{{ _.base_url }}/auth/register",
+      "headers": [
+        {
+          "name": "Content-Type",
+          "value": "application/json"
+        }
+      ],
+      "authentication": {},
+      "body": {
+        "mimeType": "application/json",
+        "text": "{\n  \"name\": \"Paula\",\n  \"email\": \"paula@example.com\",\n  \"password\": \"éééééééééééééééééééééééééééééééééééééééé\",\n  \"costCenterId\": {{ _.cost_center_ti_id }}\n}"
+      },
+      "description": "40 caracteres, mas 80 bytes em UTF-8 (limite do bcrypt é 72 bytes). Esperado: 400 com erro no campo password."
+    },
+    {
+      "_id": "req_register_json_malformado",
+      "_type": "request",
+      "parentId": "fld_register",
+      "metaSortKey": 7,
+      "name": "JSON malformado → 400",
+      "method": "POST",
+      "url": "{{ _.base_url }}/auth/register",
+      "headers": [
+        {
+          "name": "Content-Type",
+          "value": "application/json"
+        }
+      ],
+      "authentication": {},
+      "body": {
+        "mimeType": "application/json",
+        "text": "{ \"name\": \"Nina\", "
+      },
+      "description": "Esperado: 400 MALFORMED_REQUEST, sem detalhes internos do parser."
+    },
+    {
+      "_id": "fld_me",
+      "_type": "request_group",
+      "parentId": "wrk_purchase",
+      "name": "04 Sessão (/auth/me) e tokens inválidos",
+      "description": "Todo 401 deve vir em application/problem+json com code UNAUTHORIZED e header WWW-Authenticate: Bearer.",
+      "metaSortKey": 4
+    },
+    {
+      "_id": "req_me_solicitante",
+      "_type": "request",
+      "parentId": "fld_me",
+      "metaSortKey": 1,
+      "name": "Me (Solicitante TI) → 200",
+      "method": "GET",
+      "url": "{{ _.base_url }}/auth/me",
+      "headers": [],
+      "authentication": {
+        "type": "bearer",
+        "token": "{{ _.token_solicitante_ti }}"
+      },
+      "body": {},
+      "description": "Esperado: 200 com role SOLICITANTE, approverLevel null e costCenterId 1. Sem senha nem hash."
+    },
+    {
+      "_id": "req_me_aprovador",
+      "_type": "request",
+      "parentId": "fld_me",
+      "metaSortKey": 2,
+      "name": "Me (Aprovador N2 TI) → 200",
+      "method": "GET",
+      "url": "{{ _.base_url }}/auth/me",
+      "headers": [],
+      "authentication": {
+        "type": "bearer",
+        "token": "{{ _.token_aprovador2_ti }}"
+      },
+      "body": {},
+      "description": "Esperado: role APROVADOR, approverLevel NIVEL_2 e costCenterId 1."
+    },
+    {
+      "_id": "req_me_admin",
+      "_type": "request",
+      "parentId": "fld_me",
+      "metaSortKey": 3,
+      "name": "Me (Admin) → 200",
+      "method": "GET",
+      "url": "{{ _.base_url }}/auth/me",
+      "headers": [],
+      "authentication": {
+        "type": "bearer",
+        "token": "{{ _.token_admin }}"
+      },
+      "body": {},
       "description": "Esperado: role ADMIN e costCenterId null."
     },
     {
-      "_id": "req_me_aprovador", "_type": "request", "parentId": "fld_me", "metaSortKey": 3,
-      "name": "Me (Aprovador) → 200", "method": "GET", "url": "{{ _.base_url }}/auth/me",
-      "headers": [], "authentication": { "type": "bearer", "token": "{{ _.token_aprovador }}" }, "body": {},
-      "description": "Esperado: role APROVADOR e approverLevel NIVEL_2."
-    },
-    {
-      "_id": "req_me_sem_token", "_type": "request", "parentId": "fld_me", "metaSortKey": 4,
-      "name": "Sem token → 401", "method": "GET", "url": "{{ _.base_url }}/auth/me",
-      "headers": [], "authentication": {}, "body": {},
+      "_id": "req_me_sem_token",
+      "_type": "request",
+      "parentId": "fld_me",
+      "metaSortKey": 4,
+      "name": "Sem token → 401",
+      "method": "GET",
+      "url": "{{ _.base_url }}/auth/me",
+      "headers": [],
+      "authentication": {},
+      "body": {},
       "description": "Esperado: 401 UNAUTHORIZED em application/problem+json, instance /auth/me, requestId e header WWW-Authenticate: Bearer."
     },
     {
-      "_id": "req_me_malformado", "_type": "request", "parentId": "fld_me", "metaSortKey": 5,
-      "name": "Token malformado → 401", "method": "GET", "url": "{{ _.base_url }}/auth/me",
-      "headers": [], "authentication": { "type": "bearer", "token": "nao-e-um-jwt" }, "body": {},
+      "_id": "req_me_malformado",
+      "_type": "request",
+      "parentId": "fld_me",
+      "metaSortKey": 5,
+      "name": "Token malformado → 401",
+      "method": "GET",
+      "url": "{{ _.base_url }}/auth/me",
+      "headers": [],
+      "authentication": {
+        "type": "bearer",
+        "token": "nao-e-um-jwt"
+      },
+      "body": {},
       "description": "Esperado: 401 UNAUTHORIZED."
     },
     {
-      "_id": "req_me_adulterado", "_type": "request", "parentId": "fld_me", "metaSortKey": 6,
-      "name": "Token adulterado (assinatura quebrada) → 401", "method": "GET", "url": "{{ _.base_url }}/auth/me",
-      "headers": [], "authentication": { "type": "bearer", "token": "{{ _.token_maria }}x" }, "body": {},
-      "description": "O token válido da Maria com um caractere a mais no fim. Esperado: 401 UNAUTHORIZED."
+      "_id": "req_me_adulterado",
+      "_type": "request",
+      "parentId": "fld_me",
+      "metaSortKey": 6,
+      "name": "Token adulterado (assinatura quebrada) → 401",
+      "method": "GET",
+      "url": "{{ _.base_url }}/auth/me",
+      "headers": [],
+      "authentication": {
+        "type": "bearer",
+        "token": "{{ _.token_solicitante_ti }}x"
+      },
+      "body": {},
+      "description": "O token válido da Solicitante TI com um caractere a mais no fim. Esperado: 401 UNAUTHORIZED."
     },
     {
-      "_id": "req_me_expirado", "_type": "request", "parentId": "fld_me", "metaSortKey": 7,
-      "name": "Token expirado → 401", "method": "GET", "url": "{{ _.base_url }}/auth/me",
-      "headers": [], "authentication": { "type": "bearer", "token": "{{ _.token_maria }}" }, "body": {},
-      "description": "Para testar a expiração com um token real: suba o back com TTL de 1 minuto (PowerShell: `$env:JWT_TTL_MINUTES=1; ./mvnw spring-boot:run`), rode Login Maria, espere uns 2 minutos e envie. O decoder tolera 60 s de diferença de relógio, por isso não basta 1 minuto. Esperado: 401 UNAUTHORIZED."
+      "_id": "req_me_expirado",
+      "_type": "request",
+      "parentId": "fld_me",
+      "metaSortKey": 7,
+      "name": "Token expirado → 401",
+      "method": "GET",
+      "url": "{{ _.base_url }}/auth/me",
+      "headers": [],
+      "authentication": {
+        "type": "bearer",
+        "token": "{{ _.token_solicitante_ti }}"
+      },
+      "body": {},
+      "description": "Para testar a expiração com um token real: suba o back com TTL de 1 minuto (PowerShell: `$env:JWT_TTL_MINUTES=1; ./mvnw spring-boot:run`), rode o login da Solicitante TI, espere uns 2 minutos e envie. O decoder tolera 60 s de diferença de relógio, por isso não basta 1 minuto. Esperado: 401 UNAUTHORIZED."
     },
     {
-      "_id": "req_me_basic", "_type": "request", "parentId": "fld_me", "metaSortKey": 8,
-      "name": "Authorization Basic → 401", "method": "GET", "url": "{{ _.base_url }}/auth/me",
-      "headers": [], "authentication": { "type": "basic", "username": "maria@example.com", "password": "{{ _.senha }}" }, "body": {},
+      "_id": "req_me_basic",
+      "_type": "request",
+      "parentId": "fld_me",
+      "metaSortKey": 8,
+      "name": "Authorization Basic → 401",
+      "method": "GET",
+      "url": "{{ _.base_url }}/auth/me",
+      "headers": [],
+      "authentication": {
+        "type": "basic",
+        "username": "solicitante.ti@example.com",
+        "password": "{{ _.senha }}"
+      },
+      "body": {},
       "description": "HTTP Basic está desligado; só Bearer autentica. Esperado: 401 UNAUTHORIZED."
     },
-
     {
-      "_id": "req_authz_users_get_solicitante", "_type": "request", "parentId": "fld_authz", "metaSortKey": 1,
-      "name": "SOLICITANTE lista usuários → 403", "method": "GET", "url": "{{ _.base_url }}/users",
-      "headers": [], "authentication": { "type": "bearer", "token": "{{ _.token_maria }}" }, "body": {},
+      "_id": "fld_authz",
+      "_type": "request_group",
+      "parentId": "wrk_purchase",
+      "name": "05 Autorização por papel (403)",
+      "description": "Rotas exclusivas de ADMIN (/users/**, POST /cost-centers, PUT de orçamento) são barradas no SecurityFilterChain, antes de o corpo ser lido. Decisões de etapa (approve, reject, request-changes) por SOLICITANTE são 403 no service.",
+      "metaSortKey": 5
+    },
+    {
+      "_id": "req_authz_users_get_solicitante",
+      "_type": "request",
+      "parentId": "fld_authz",
+      "metaSortKey": 1,
+      "name": "SOLICITANTE lista usuários → 403",
+      "method": "GET",
+      "url": "{{ _.base_url }}/users",
+      "headers": [],
+      "authentication": {
+        "type": "bearer",
+        "token": "{{ _.token_solicitante_ti }}"
+      },
+      "body": {},
       "description": "Esperado: 403 ACCESS_DENIED em application/problem+json, detail \"Seu papel não permite executar esta ação.\""
     },
     {
-      "_id": "req_authz_users_post_solicitante", "_type": "request", "parentId": "fld_authz", "metaSortKey": 2,
-      "name": "SOLICITANTE cria usuário → 403", "method": "POST", "url": "{{ _.base_url }}/users",
-      "headers": [{ "name": "Content-Type", "value": "application/json" }], "authentication": { "type": "bearer", "token": "{{ _.token_maria }}" },
-      "body": { "mimeType": "application/json", "text": "{\n  \"name\": \"Novo\",\n  \"email\": \"novo@example.com\",\n  \"role\": \"ADMIN\"\n}" },
+      "_id": "req_authz_users_post_solicitante",
+      "_type": "request",
+      "parentId": "fld_authz",
+      "metaSortKey": 2,
+      "name": "SOLICITANTE cria usuário → 403",
+      "method": "POST",
+      "url": "{{ _.base_url }}/users",
+      "headers": [
+        {
+          "name": "Content-Type",
+          "value": "application/json"
+        }
+      ],
+      "authentication": {
+        "type": "bearer",
+        "token": "{{ _.token_solicitante_ti }}"
+      },
+      "body": {
+        "mimeType": "application/json",
+        "text": "{\n  \"name\": \"Novo\",\n  \"email\": \"novo@example.com\",\n  \"role\": \"ADMIN\"\n}"
+      },
       "description": "Esperado: 403 ACCESS_DENIED (barrado antes de ler o corpo)."
     },
     {
-      "_id": "req_authz_users_patch_aprovador", "_type": "request", "parentId": "fld_authz", "metaSortKey": 3,
-      "name": "APROVADOR edita usuário → 403", "method": "PATCH", "url": "{{ _.base_url }}/users/1",
-      "headers": [{ "name": "Content-Type", "value": "application/json" }], "authentication": { "type": "bearer", "token": "{{ _.token_aprovador }}" },
-      "body": { "mimeType": "application/json", "text": "{\n  \"role\": \"ADMIN\"\n}" },
+      "_id": "req_authz_users_patch_aprovador",
+      "_type": "request",
+      "parentId": "fld_authz",
+      "metaSortKey": 3,
+      "name": "APROVADOR edita usuário → 403",
+      "method": "PATCH",
+      "url": "{{ _.base_url }}/users/1",
+      "headers": [
+        {
+          "name": "Content-Type",
+          "value": "application/json"
+        }
+      ],
+      "authentication": {
+        "type": "bearer",
+        "token": "{{ _.token_aprovador2_ti }}"
+      },
+      "body": {
+        "mimeType": "application/json",
+        "text": "{\n  \"role\": \"ADMIN\"\n}"
+      },
       "description": "Esperado: 403 ACCESS_DENIED. Aprovador também não gerencia usuários."
     },
     {
-      "_id": "req_authz_cc_post_solicitante", "_type": "request", "parentId": "fld_authz", "metaSortKey": 4,
-      "name": "SOLICITANTE cria centro de custo → 403", "method": "POST", "url": "{{ _.base_url }}/cost-centers",
-      "headers": [{ "name": "Content-Type", "value": "application/json" }], "authentication": { "type": "bearer", "token": "{{ _.token_maria }}" },
-      "body": { "mimeType": "application/json", "text": "{\n  \"code\": \"CC-FIN-01\",\n  \"name\": \"Financeiro\"\n}" },
+      "_id": "req_authz_cc_post_solicitante",
+      "_type": "request",
+      "parentId": "fld_authz",
+      "metaSortKey": 4,
+      "name": "SOLICITANTE cria centro de custo → 403",
+      "method": "POST",
+      "url": "{{ _.base_url }}/cost-centers",
+      "headers": [
+        {
+          "name": "Content-Type",
+          "value": "application/json"
+        }
+      ],
+      "authentication": {
+        "type": "bearer",
+        "token": "{{ _.token_solicitante_ti }}"
+      },
+      "body": {
+        "mimeType": "application/json",
+        "text": "{\n  \"code\": \"CC-FIN-01\",\n  \"name\": \"Financeiro\"\n}"
+      },
       "description": "Esperado: 403 ACCESS_DENIED."
     },
     {
-      "_id": "req_authz_budget_put_aprovador", "_type": "request", "parentId": "fld_authz", "metaSortKey": 5,
-      "name": "APROVADOR define orçamento → 403", "method": "PUT", "url": "{{ _.base_url }}/cost-centers/{{ _.cost_center_id }}/budgets/2026-11",
-      "headers": [{ "name": "Content-Type", "value": "application/json" }], "authentication": { "type": "bearer", "token": "{{ _.token_aprovador }}" },
-      "body": { "mimeType": "application/json", "text": "{\n  \"amount\": \"50000.00\"\n}" },
+      "_id": "req_authz_budget_put_aprovador",
+      "_type": "request",
+      "parentId": "fld_authz",
+      "metaSortKey": 5,
+      "name": "APROVADOR define orçamento → 403",
+      "method": "PUT",
+      "url": "{{ _.base_url }}/cost-centers/{{ _.cost_center_ti_id }}/budgets/{{ _.budget_month }}",
+      "headers": [
+        {
+          "name": "Content-Type",
+          "value": "application/json"
+        }
+      ],
+      "authentication": {
+        "type": "bearer",
+        "token": "{{ _.token_aprovador2_ti }}"
+      },
+      "body": {
+        "mimeType": "application/json",
+        "text": "{\n  \"amount\": \"90000.00\"\n}"
+      },
       "description": "Esperado: 403 ACCESS_DENIED."
     },
     {
-      "_id": "req_authz_cc_get_solicitante", "_type": "request", "parentId": "fld_authz", "metaSortKey": 6,
-      "name": "SOLICITANTE lista centros de custo → 200 (não é 403)", "method": "GET", "url": "{{ _.base_url }}/cost-centers",
-      "headers": [], "authentication": { "type": "bearer", "token": "{{ _.token_maria }}" }, "body": {},
+      "_id": "req_authz_cc_get_solicitante",
+      "_type": "request",
+      "parentId": "fld_authz",
+      "metaSortKey": 6,
+      "name": "SOLICITANTE lista centros de custo → 200 (não é 403)",
+      "method": "GET",
+      "url": "{{ _.base_url }}/cost-centers",
+      "headers": [],
+      "authentication": {
+        "type": "bearer",
+        "token": "{{ _.token_solicitante_ti }}"
+      },
+      "body": {},
       "description": "GET /cost-centers não é exclusivo de ADMIN: qualquer autenticado lista. Esperado: 200 com a lista ordenada por code."
     },
     {
-      "_id": "req_authz_users_get_admin", "_type": "request", "parentId": "fld_authz", "metaSortKey": 7,
-      "name": "ADMIN lista usuários → 200 (não é 403)", "method": "GET", "url": "{{ _.base_url }}/users",
-      "headers": [], "authentication": { "type": "bearer", "token": "{{ _.token_admin }}" }, "body": {},
+      "_id": "req_authz_users_get_admin",
+      "_type": "request",
+      "parentId": "fld_authz",
+      "metaSortKey": 7,
+      "name": "ADMIN lista usuários → 200 (não é 403)",
+      "method": "GET",
+      "url": "{{ _.base_url }}/users",
+      "headers": [],
+      "authentication": {
+        "type": "bearer",
+        "token": "{{ _.token_admin }}"
+      },
+      "body": {},
       "description": "Prova que o ADMIN passa pela regra do SecurityFilterChain. Esperado: 200 com a lista de usuários, sem senha nem hash."
     },
-
     {
-      "_id": "req_cc_list", "_type": "request", "parentId": "fld_cost_centers", "metaSortKey": 1,
-      "name": "Listar centros de custo (Maria) → 200", "method": "GET", "url": "{{ _.base_url }}/cost-centers",
-      "headers": [], "authentication": { "type": "bearer", "token": "{{ _.token_maria }}" }, "body": {},
-      "description": "Esperado: 200 com [{ id, code, name, createdAt }], ordenado por code."
+      "_id": "fld_cost_centers",
+      "_type": "request_group",
+      "parentId": "wrk_purchase",
+      "name": "06 Centros de custo (/cost-centers)",
+      "description": "GET para qualquer autenticado; POST só ADMIN. O código é gravado em maiúsculas e é único sem diferenciar maiúsculas.",
+      "metaSortKey": 6
     },
     {
-      "_id": "req_cc_create", "_type": "request", "parentId": "fld_cost_centers", "metaSortKey": 2,
-      "name": "Criar CC-FIN-01 (Admin) → 201", "method": "POST", "url": "{{ _.base_url }}/cost-centers",
-      "headers": [{ "name": "Content-Type", "value": "application/json" }], "authentication": { "type": "bearer", "token": "{{ _.token_admin }}" },
-      "body": { "mimeType": "application/json", "text": "{\n  \"code\": \"cc-fin-01\",\n  \"name\": \"Financeiro\"\n}" },
-      "afterResponseScript": "const body = insomnia.response.json();\nif (body && body.id) {\n  insomnia.baseEnvironment.set('cost_center_fin_id', body.id);\n}",
-      "description": "Esperado: 201 com code \"CC-FIN-01\" (gravado em maiúsculas). O script pós-resposta grava o id em cost_center_fin_id. Rodar de novo dá o 422 do próximo exemplo."
+      "_id": "req_cc_list",
+      "_type": "request",
+      "parentId": "fld_cost_centers",
+      "metaSortKey": 1,
+      "name": "Listar centros de custo → 200",
+      "method": "GET",
+      "url": "{{ _.base_url }}/cost-centers",
+      "headers": [],
+      "authentication": {
+        "type": "bearer",
+        "token": "{{ _.token_solicitante_ti }}"
+      },
+      "body": {},
+      "description": "Esperado: 200 com [{ id, code, name, createdAt }] ordenado por code: CC-MNT-01 e CC-TI-01 do seed (mais os criados aqui)."
     },
     {
-      "_id": "req_cc_duplicado", "_type": "request", "parentId": "fld_cost_centers", "metaSortKey": 3,
-      "name": "Código já usado (outra caixa) → 422", "method": "POST", "url": "{{ _.base_url }}/cost-centers",
-      "headers": [{ "name": "Content-Type", "value": "application/json" }], "authentication": { "type": "bearer", "token": "{{ _.token_admin }}" },
-      "body": { "mimeType": "application/json", "text": "{\n  \"code\": \"Cc-Ti-01\",\n  \"name\": \"Outro\"\n}" },
-      "description": "Esperado: 422 COST_CENTER_CODE_ALREADY_EXISTS (o CC-TI-01 da preparação já existe)."
+      "_id": "req_cc_create",
+      "_type": "request",
+      "parentId": "fld_cost_centers",
+      "metaSortKey": 2,
+      "name": "Criar CC-FIN-01 (Admin) → 201",
+      "method": "POST",
+      "url": "{{ _.base_url }}/cost-centers",
+      "headers": [
+        {
+          "name": "Content-Type",
+          "value": "application/json"
+        }
+      ],
+      "authentication": {
+        "type": "bearer",
+        "token": "{{ _.token_admin }}"
+      },
+      "body": {
+        "mimeType": "application/json",
+        "text": "{\n  \"code\": \"cc-fin-01\",\n  \"name\": \"Financeiro\"\n}"
+      },
+      "afterResponseScript": "let body;\ntry { body = insomnia.response.json(); } catch (e) { body = null; }\nif (body && body.id !== undefined) {\n  insomnia.baseEnvironment.set('cost_center_novo_id', body.id);\n}",
+      "description": "Esperado: 201 com code \"CC-FIN-01\" (gravado em maiúsculas). O script pós-resposta grava o id em cost_center_novo_id. Rodar de novo dá 422 COST_CENTER_CODE_ALREADY_EXISTS."
     },
     {
-      "_id": "req_cc_invalido", "_type": "request", "parentId": "fld_cost_centers", "metaSortKey": 4,
-      "name": "Campos inválidos → 400 com errors[]", "method": "POST", "url": "{{ _.base_url }}/cost-centers",
-      "headers": [{ "name": "Content-Type", "value": "application/json" }], "authentication": { "type": "bearer", "token": "{{ _.token_admin }}" },
-      "body": { "mimeType": "application/json", "text": "{\n  \"code\": \"CC FIN\",\n  \"name\": \"\"\n}" },
+      "_id": "req_cc_duplicado",
+      "_type": "request",
+      "parentId": "fld_cost_centers",
+      "metaSortKey": 3,
+      "name": "Código já usado (outra caixa) → 422",
+      "method": "POST",
+      "url": "{{ _.base_url }}/cost-centers",
+      "headers": [
+        {
+          "name": "Content-Type",
+          "value": "application/json"
+        }
+      ],
+      "authentication": {
+        "type": "bearer",
+        "token": "{{ _.token_admin }}"
+      },
+      "body": {
+        "mimeType": "application/json",
+        "text": "{\n  \"code\": \"Cc-Ti-01\",\n  \"name\": \"Outro\"\n}"
+      },
+      "description": "Esperado: 422 COST_CENTER_CODE_ALREADY_EXISTS (o CC-TI-01 do seed já existe)."
+    },
+    {
+      "_id": "req_cc_invalido",
+      "_type": "request",
+      "parentId": "fld_cost_centers",
+      "metaSortKey": 4,
+      "name": "Campos inválidos → 400 com errors[]",
+      "method": "POST",
+      "url": "{{ _.base_url }}/cost-centers",
+      "headers": [
+        {
+          "name": "Content-Type",
+          "value": "application/json"
+        }
+      ],
+      "authentication": {
+        "type": "bearer",
+        "token": "{{ _.token_admin }}"
+      },
+      "body": {
+        "mimeType": "application/json",
+        "text": "{\n  \"code\": \"CC FIN\",\n  \"name\": \"\"\n}"
+      },
       "description": "Esperado: 400 VALIDATION_FAILED com errors[] para code (espaço não é permitido) e name."
     },
-
     {
-      "_id": "req_users_list", "_type": "request", "parentId": "fld_users", "metaSortKey": 1,
-      "name": "Listar usuários → 200", "method": "GET", "url": "{{ _.base_url }}/users",
-      "headers": [], "authentication": { "type": "bearer", "token": "{{ _.token_admin }}" }, "body": {},
-      "description": "Esperado: 200 com [{ id, name, email, role, approverLevel, costCenterId }] ordenado por id; nenhum campo de senha."
+      "_id": "fld_users",
+      "_type": "request_group",
+      "parentId": "wrk_purchase",
+      "name": "07 Usuários (/users, ADMIN)",
+      "description": "Coerência de perfil: approverLevel só (e sempre) para APROVADOR; centro de custo obrigatório fora de ADMIN. Violação → 422 com code específico. O PATCH é parcial: campo ausente mantém o valor atual. O perfil novo só vale no próximo login (claims do JWT, ADR 007).",
+      "metaSortKey": 7
     },
     {
-      "_id": "req_users_promover_aprovador", "_type": "request", "parentId": "fld_users", "metaSortKey": 2,
-      "name": "Promover Aprovador (PATCH) → 200", "method": "PATCH", "url": "{{ _.base_url }}/users/{{ _.aprovador_id }}",
-      "headers": [{ "name": "Content-Type", "value": "application/json" }], "authentication": { "type": "bearer", "token": "{{ _.token_admin }}" },
-      "body": { "mimeType": "application/json", "text": "{\n  \"role\": \"APROVADOR\",\n  \"approverLevel\": \"NIVEL_2\"\n}" },
-      "description": "Usa o aprovador_id gravado no cadastro (02). Esperado: 200 com role APROVADOR e approverLevel NIVEL_2; costCenterId mantido. Depois refaça 03 → Login Aprovador para ter as claims novas."
+      "_id": "req_users_list",
+      "_type": "request",
+      "parentId": "fld_users",
+      "metaSortKey": 1,
+      "name": "Listar usuários → 200",
+      "method": "GET",
+      "url": "{{ _.base_url }}/users",
+      "headers": [],
+      "authentication": {
+        "type": "bearer",
+        "token": "{{ _.token_admin }}"
+      },
+      "body": {},
+      "description": "Esperado: 200 com [{ id, name, email, role, approverLevel, costCenterId }] ordenado por id: os 8 do seed primeiro; nenhum campo de senha."
     },
     {
-      "_id": "req_users_criar_aprovador_fin", "_type": "request", "parentId": "fld_users", "metaSortKey": 3,
-      "name": "Criar APROVADOR NIVEL_1 no CC-FIN-01 → 201", "method": "POST", "url": "{{ _.base_url }}/users",
-      "headers": [{ "name": "Content-Type", "value": "application/json" }], "authentication": { "type": "bearer", "token": "{{ _.token_admin }}" },
-      "body": { "mimeType": "application/json", "text": "{\n  \"name\": \"Fernanda Financeiro\",\n  \"email\": \"fernanda@example.com\",\n  \"password\": \"{{ _.senha }}\",\n  \"role\": \"APROVADOR\",\n  \"approverLevel\": \"NIVEL_1\",\n  \"costCenterId\": {{ _.cost_center_fin_id }}\n}" },
-      "description": "Rode antes 06 → Criar CC-FIN-01. Esperado: 201 com o papel pedido (diferente do /auth/register, aqui o ADMIN escolhe o papel). O login com fernanda@example.com e a senha do ambiente funciona."
+      "_id": "req_users_criar_aprovador",
+      "_type": "request",
+      "parentId": "fld_users",
+      "metaSortKey": 2,
+      "name": "Criar APROVADOR NIVEL_1 no CC-MNT-01 → 201",
+      "method": "POST",
+      "url": "{{ _.base_url }}/users",
+      "headers": [
+        {
+          "name": "Content-Type",
+          "value": "application/json"
+        }
+      ],
+      "authentication": {
+        "type": "bearer",
+        "token": "{{ _.token_admin }}"
+      },
+      "body": {
+        "mimeType": "application/json",
+        "text": "{\n  \"name\": \"Igor Aprovador\",\n  \"email\": \"igor@example.com\",\n  \"password\": \"{{ _.senha_nova }}\",\n  \"role\": \"APROVADOR\",\n  \"approverLevel\": \"NIVEL_1\",\n  \"costCenterId\": {{ _.cost_center_mnt_id }}\n}"
+      },
+      "afterResponseScript": "let body;\ntry { body = insomnia.response.json(); } catch (e) { body = null; }\nif (body && body.id !== undefined) {\n  insomnia.baseEnvironment.set('user_novo_id', body.id);\n}",
+      "description": "Esperado: 201 com o papel pedido (diferente do /auth/register, aqui o ADMIN escolhe o papel). O script pós-resposta grava o id em user_novo_id. Rodar de novo dá 422 EMAIL_ALREADY_REGISTERED."
     },
     {
-      "_id": "req_users_aprovador_sem_nivel", "_type": "request", "parentId": "fld_users", "metaSortKey": 4,
-      "name": "APROVADOR sem approverLevel → 422", "method": "POST", "url": "{{ _.base_url }}/users",
-      "headers": [{ "name": "Content-Type", "value": "application/json" }], "authentication": { "type": "bearer", "token": "{{ _.token_admin }}" },
-      "body": { "mimeType": "application/json", "text": "{\n  \"name\": \"Sem Nível\",\n  \"email\": \"semnivel@example.com\",\n  \"password\": \"{{ _.senha }}\",\n  \"role\": \"APROVADOR\",\n  \"costCenterId\": {{ _.cost_center_id }}\n}" },
+      "_id": "req_users_promover",
+      "_type": "request",
+      "parentId": "fld_users",
+      "metaSortKey": 3,
+      "name": "Promover o novo aprovador a NIVEL_2 (PATCH) → 200",
+      "method": "PATCH",
+      "url": "{{ _.base_url }}/users/{{ _.user_novo_id }}",
+      "headers": [
+        {
+          "name": "Content-Type",
+          "value": "application/json"
+        }
+      ],
+      "authentication": {
+        "type": "bearer",
+        "token": "{{ _.token_admin }}"
+      },
+      "body": {
+        "mimeType": "application/json",
+        "text": "{\n  \"approverLevel\": \"NIVEL_2\"\n}"
+      },
+      "description": "Usa o user_novo_id do passo anterior. Esperado: 200 com approverLevel NIVEL_2; role e costCenterId mantidos."
+    },
+    {
+      "_id": "req_users_aprovador_sem_nivel",
+      "_type": "request",
+      "parentId": "fld_users",
+      "metaSortKey": 4,
+      "name": "APROVADOR sem approverLevel → 422",
+      "method": "POST",
+      "url": "{{ _.base_url }}/users",
+      "headers": [
+        {
+          "name": "Content-Type",
+          "value": "application/json"
+        }
+      ],
+      "authentication": {
+        "type": "bearer",
+        "token": "{{ _.token_admin }}"
+      },
+      "body": {
+        "mimeType": "application/json",
+        "text": "{\n  \"name\": \"Sem Nível\",\n  \"email\": \"semnivel@example.com\",\n  \"password\": \"{{ _.senha_nova }}\",\n  \"role\": \"APROVADOR\",\n  \"costCenterId\": {{ _.cost_center_ti_id }}\n}"
+      },
       "description": "Esperado: 422 APPROVER_LEVEL_REQUIRED."
     },
     {
-      "_id": "req_users_nivel_para_solicitante", "_type": "request", "parentId": "fld_users", "metaSortKey": 5,
-      "name": "approverLevel para SOLICITANTE (PATCH) → 422", "method": "PATCH", "url": "{{ _.base_url }}/users/1",
-      "headers": [{ "name": "Content-Type", "value": "application/json" }], "authentication": { "type": "bearer", "token": "{{ _.token_admin }}" },
-      "body": { "mimeType": "application/json", "text": "{\n  \"approverLevel\": \"NIVEL_1\"\n}" },
-      "description": "Usuário 1 = Maria (SOLICITANTE) se a preparação foi seguida do zero. Esperado: 422 APPROVER_LEVEL_NOT_ALLOWED; nada muda."
+      "_id": "req_users_nivel_para_solicitante",
+      "_type": "request",
+      "parentId": "fld_users",
+      "metaSortKey": 5,
+      "name": "approverLevel para SOLICITANTE (PATCH) → 422",
+      "method": "PATCH",
+      "url": "{{ _.base_url }}/users/3",
+      "headers": [
+        {
+          "name": "Content-Type",
+          "value": "application/json"
+        }
+      ],
+      "authentication": {
+        "type": "bearer",
+        "token": "{{ _.token_admin }}"
+      },
+      "body": {
+        "mimeType": "application/json",
+        "text": "{\n  \"approverLevel\": \"NIVEL_1\"\n}"
+      },
+      "description": "Usuário 3 = solicitante.ti@example.com no seed. Esperado: 422 APPROVER_LEVEL_NOT_ALLOWED; nada muda."
     },
     {
-      "_id": "req_users_solicitante_sem_cc", "_type": "request", "parentId": "fld_users", "metaSortKey": 6,
-      "name": "SOLICITANTE sem centro de custo → 422", "method": "POST", "url": "{{ _.base_url }}/users",
-      "headers": [{ "name": "Content-Type", "value": "application/json" }], "authentication": { "type": "bearer", "token": "{{ _.token_admin }}" },
-      "body": { "mimeType": "application/json", "text": "{\n  \"name\": \"Sem Centro\",\n  \"email\": \"semcentro@example.com\",\n  \"password\": \"{{ _.senha }}\",\n  \"role\": \"SOLICITANTE\"\n}" },
+      "_id": "req_users_solicitante_sem_cc",
+      "_type": "request",
+      "parentId": "fld_users",
+      "metaSortKey": 6,
+      "name": "SOLICITANTE sem centro de custo → 422",
+      "method": "POST",
+      "url": "{{ _.base_url }}/users",
+      "headers": [
+        {
+          "name": "Content-Type",
+          "value": "application/json"
+        }
+      ],
+      "authentication": {
+        "type": "bearer",
+        "token": "{{ _.token_admin }}"
+      },
+      "body": {
+        "mimeType": "application/json",
+        "text": "{\n  \"name\": \"Sem Centro\",\n  \"email\": \"semcentro@example.com\",\n  \"password\": \"{{ _.senha_nova }}\",\n  \"role\": \"SOLICITANTE\"\n}"
+      },
       "description": "Esperado: 422 COST_CENTER_REQUIRED (só o ADMIN pode ser global)."
     },
     {
-      "_id": "req_users_patch_inexistente", "_type": "request", "parentId": "fld_users", "metaSortKey": 7,
-      "name": "Editar usuário inexistente → 404", "method": "PATCH", "url": "{{ _.base_url }}/users/999999",
-      "headers": [{ "name": "Content-Type", "value": "application/json" }], "authentication": { "type": "bearer", "token": "{{ _.token_admin }}" },
-      "body": { "mimeType": "application/json", "text": "{\n  \"role\": \"ADMIN\"\n}" },
+      "_id": "req_users_patch_inexistente",
+      "_type": "request",
+      "parentId": "fld_users",
+      "metaSortKey": 7,
+      "name": "Editar usuário inexistente → 404",
+      "method": "PATCH",
+      "url": "{{ _.base_url }}/users/999999",
+      "headers": [
+        {
+          "name": "Content-Type",
+          "value": "application/json"
+        }
+      ],
+      "authentication": {
+        "type": "bearer",
+        "token": "{{ _.token_admin }}"
+      },
+      "body": {
+        "mimeType": "application/json",
+        "text": "{\n  \"role\": \"ADMIN\"\n}"
+      },
       "description": "Esperado: 404 NOT_FOUND em application/problem+json."
     },
     {
-      "_id": "req_users_papel_desconhecido", "_type": "request", "parentId": "fld_users", "metaSortKey": 8,
-      "name": "Papel desconhecido → 400", "method": "PATCH", "url": "{{ _.base_url }}/users/1",
-      "headers": [{ "name": "Content-Type", "value": "application/json" }], "authentication": { "type": "bearer", "token": "{{ _.token_admin }}" },
-      "body": { "mimeType": "application/json", "text": "{\n  \"role\": \"CHEFE\"\n}" },
+      "_id": "req_users_papel_desconhecido",
+      "_type": "request",
+      "parentId": "fld_users",
+      "metaSortKey": 8,
+      "name": "Papel desconhecido → 400",
+      "method": "PATCH",
+      "url": "{{ _.base_url }}/users/3",
+      "headers": [
+        {
+          "name": "Content-Type",
+          "value": "application/json"
+        }
+      ],
+      "authentication": {
+        "type": "bearer",
+        "token": "{{ _.token_admin }}"
+      },
+      "body": {
+        "mimeType": "application/json",
+        "text": "{\n  \"role\": \"CHEFE\"\n}"
+      },
       "description": "Esperado: 400 MALFORMED_REQUEST (valor fora do enum Role)."
     },
-
     {
-      "_id": "req_budget_sem_orcamento", "_type": "request", "parentId": "fld_budgets", "metaSortKey": 1,
-      "name": "Mês sem orçamento (Maria) → 200 com saldo zero", "method": "GET", "url": "{{ _.base_url }}/cost-centers/{{ _.cost_center_id }}/budgets/2030-01",
-      "headers": [], "authentication": { "type": "bearer", "token": "{{ _.token_maria }}" }, "body": {},
-      "description": "Esperado: 200 com amount, consumed e available iguais a \"0.00\" (mês sem orçamento cadastrado tem saldo zero)."
+      "_id": "fld_budgets",
+      "_type": "request_group",
+      "parentId": "wrk_purchase",
+      "name": "08 Orçamentos (/cost-centers/:id/budgets/:yyyy-mm)",
+      "description": "GET para qualquer autenticado; PUT só ADMIN. Valores em string com 2 casas. O PUT é um único INSERT ... ON CONFLICT DO UPDATE ... WHERE consumed <= novo valor, então não há corrida com uma aprovação simultânea.",
+      "metaSortKey": 8
     },
     {
-      "_id": "req_budget_definir", "_type": "request", "parentId": "fld_budgets", "metaSortKey": 2,
-      "name": "Definir orçamento do mês (Admin) → 200", "method": "PUT", "url": "{{ _.base_url }}/cost-centers/{{ _.cost_center_id }}/budgets/{{ _.budget_month }}",
-      "headers": [{ "name": "Content-Type", "value": "application/json" }], "authentication": { "type": "bearer", "token": "{{ _.token_admin }}" },
-      "body": { "mimeType": "application/json", "text": "{\n  \"amount\": \"15000.00\"\n}" },
+      "_id": "req_budget_ti",
+      "_type": "request",
+      "parentId": "fld_budgets",
+      "metaSortKey": 1,
+      "name": "Orçamento do CC-TI-01 no mês → 200",
+      "method": "GET",
+      "url": "{{ _.base_url }}/cost-centers/{{ _.cost_center_ti_id }}/budgets/{{ _.budget_month }}",
+      "headers": [],
+      "authentication": {
+        "type": "bearer",
+        "token": "{{ _.token_solicitante_ti }}"
+      },
+      "body": {},
+      "description": "Banco recém-semeado: amount \"50000.00\", consumed \"23200.00\" (servidor, antivírus e cabos aprovados) e available \"26800.00\"."
+    },
+    {
+      "_id": "req_budget_mnt",
+      "_type": "request",
+      "parentId": "fld_budgets",
+      "metaSortKey": 2,
+      "name": "Orçamento do CC-MNT-01 no mês → 200",
+      "method": "GET",
+      "url": "{{ _.base_url }}/cost-centers/{{ _.cost_center_mnt_id }}/budgets/{{ _.budget_month }}",
+      "headers": [],
+      "authentication": {
+        "type": "bearer",
+        "token": "{{ _.token_solicitante_mnt }}"
+      },
+      "body": {},
+      "description": "Banco recém-semeado: amount \"8000.00\", consumed \"7200.00\" e available \"800.00\" (quase esgotado; veja a pasta 15)."
+    },
+    {
+      "_id": "req_budget_sem_orcamento",
+      "_type": "request",
+      "parentId": "fld_budgets",
+      "metaSortKey": 3,
+      "name": "Mês sem orçamento → 200 com saldo zero",
+      "method": "GET",
+      "url": "{{ _.base_url }}/cost-centers/{{ _.cost_center_ti_id }}/budgets/2030-02",
+      "headers": [],
+      "authentication": {
+        "type": "bearer",
+        "token": "{{ _.token_solicitante_ti }}"
+      },
+      "body": {},
+      "description": "Esperado: 200 com amount, consumed e available iguais a \"0.00\"."
+    },
+    {
+      "_id": "req_budget_definir",
+      "_type": "request",
+      "parentId": "fld_budgets",
+      "metaSortKey": 4,
+      "name": "Definir orçamento de um mês futuro (Admin) → 200",
+      "method": "PUT",
+      "url": "{{ _.base_url }}/cost-centers/{{ _.cost_center_ti_id }}/budgets/2030-01",
+      "headers": [
+        {
+          "name": "Content-Type",
+          "value": "application/json"
+        }
+      ],
+      "authentication": {
+        "type": "bearer",
+        "token": "{{ _.token_admin }}"
+      },
+      "body": {
+        "mimeType": "application/json",
+        "text": "{\n  \"amount\": \"15000.00\"\n}"
+      },
       "description": "Cria o orçamento se o mês não tem, ou atualiza o valor orçado. Esperado: 200 com { costCenterId, month, amount, consumed, available }."
     },
     {
-      "_id": "req_budget_consultar", "_type": "request", "parentId": "fld_budgets", "metaSortKey": 3,
-      "name": "Consultar orçamento do mês → 200", "method": "GET", "url": "{{ _.base_url }}/cost-centers/{{ _.cost_center_id }}/budgets/{{ _.budget_month }}",
-      "headers": [], "authentication": { "type": "bearer", "token": "{{ _.token_maria }}" }, "body": {},
-      "description": "Esperado: 200 com o valor definido no passo anterior."
+      "_id": "req_budget_consultar",
+      "_type": "request",
+      "parentId": "fld_budgets",
+      "metaSortKey": 5,
+      "name": "Consultar o mês definido → 200",
+      "method": "GET",
+      "url": "{{ _.base_url }}/cost-centers/{{ _.cost_center_ti_id }}/budgets/2030-01",
+      "headers": [],
+      "authentication": {
+        "type": "bearer",
+        "token": "{{ _.token_aprovador1_ti }}"
+      },
+      "body": {},
+      "description": "Esperado: 200 com amount \"15000.00\" e consumed \"0.00\"."
     },
     {
-      "_id": "req_budget_abaixo_consumido", "_type": "request", "parentId": "fld_budgets", "metaSortKey": 4,
-      "name": "Abaixo do consumido → 422", "method": "PUT", "url": "{{ _.base_url }}/cost-centers/{{ _.cost_center_id }}/budgets/{{ _.budget_month }}",
-      "headers": [{ "name": "Content-Type", "value": "application/json" }], "authentication": { "type": "bearer", "token": "{{ _.token_admin }}" },
-      "body": { "mimeType": "application/json", "text": "{\n  \"amount\": \"799.99\"\n}" },
-      "description": "Até a E17 nada consome orçamento pela API, então simule um consumo antes:\n```\ndocker compose exec db psql -U purchase -d purchase -c \"UPDATE budget SET consumed = 800 WHERE cost_center_id = 1 AND month = '2026-11-01';\"\n```\nEsperado: 422 BUDGET_BELOW_CONSUMED com o valor pedido e o consumido no detail; o amount não muda. Com \"800.00\" passa (available 0.00)."
+      "_id": "req_budget_abaixo_consumido",
+      "_type": "request",
+      "parentId": "fld_budgets",
+      "metaSortKey": 6,
+      "name": "Abaixo do consumido (CC-MNT-01) → 422",
+      "method": "PUT",
+      "url": "{{ _.base_url }}/cost-centers/{{ _.cost_center_mnt_id }}/budgets/{{ _.budget_month }}",
+      "headers": [
+        {
+          "name": "Content-Type",
+          "value": "application/json"
+        }
+      ],
+      "authentication": {
+        "type": "bearer",
+        "token": "{{ _.token_admin }}"
+      },
+      "body": {
+        "mimeType": "application/json",
+        "text": "{\n  \"amount\": \"7000.00\"\n}"
+      },
+      "description": "O seed já consumiu 7.200,00 do CC-MNT-01. Esperado: 422 BUDGET_BELOW_CONSUMED com o valor pedido e o consumido no detail; o amount não muda. Com \"7200.00\" passa (available 0.00), mas aí a pasta 15 muda de comportamento."
     },
     {
-      "_id": "req_budget_tres_casas", "_type": "request", "parentId": "fld_budgets", "metaSortKey": 5,
-      "name": "Valor com 3 casas ou negativo → 400", "method": "PUT", "url": "{{ _.base_url }}/cost-centers/{{ _.cost_center_id }}/budgets/{{ _.budget_month }}",
-      "headers": [{ "name": "Content-Type", "value": "application/json" }], "authentication": { "type": "bearer", "token": "{{ _.token_admin }}" },
-      "body": { "mimeType": "application/json", "text": "{\n  \"amount\": \"10.505\"\n}" },
+      "_id": "req_budget_tres_casas",
+      "_type": "request",
+      "parentId": "fld_budgets",
+      "metaSortKey": 7,
+      "name": "Valor com 3 casas ou negativo → 400",
+      "method": "PUT",
+      "url": "{{ _.base_url }}/cost-centers/{{ _.cost_center_ti_id }}/budgets/2030-01",
+      "headers": [
+        {
+          "name": "Content-Type",
+          "value": "application/json"
+        }
+      ],
+      "authentication": {
+        "type": "bearer",
+        "token": "{{ _.token_admin }}"
+      },
+      "body": {
+        "mimeType": "application/json",
+        "text": "{\n  \"amount\": \"10.505\"\n}"
+      },
       "description": "Esperado: 400 VALIDATION_FAILED com errors[0].field = amount; o valor nunca é arredondado. Troque por \"-1.00\" para ver a mensagem de negativo."
     },
     {
-      "_id": "req_budget_mes_invalido", "_type": "request", "parentId": "fld_budgets", "metaSortKey": 6,
-      "name": "Mês em formato inválido → 400", "method": "GET", "url": "{{ _.base_url }}/cost-centers/{{ _.cost_center_id }}/budgets/2026-13",
-      "headers": [], "authentication": { "type": "bearer", "token": "{{ _.token_maria }}" }, "body": {},
+      "_id": "req_budget_mes_invalido",
+      "_type": "request",
+      "parentId": "fld_budgets",
+      "metaSortKey": 8,
+      "name": "Mês em formato inválido → 400",
+      "method": "GET",
+      "url": "{{ _.base_url }}/cost-centers/{{ _.cost_center_ti_id }}/budgets/2026-13",
+      "headers": [],
+      "authentication": {
+        "type": "bearer",
+        "token": "{{ _.token_solicitante_ti }}"
+      },
+      "body": {},
       "description": "Esperado: 400 VALIDATION_FAILED com errors[0].field = month (formato yyyy-MM)."
     },
     {
-      "_id": "req_budget_cc_inexistente", "_type": "request", "parentId": "fld_budgets", "metaSortKey": 7,
-      "name": "Centro de custo inexistente → 404", "method": "GET", "url": "{{ _.base_url }}/cost-centers/999999/budgets/{{ _.budget_month }}",
-      "headers": [], "authentication": { "type": "bearer", "token": "{{ _.token_maria }}" }, "body": {},
+      "_id": "req_budget_cc_inexistente",
+      "_type": "request",
+      "parentId": "fld_budgets",
+      "metaSortKey": 9,
+      "name": "Centro de custo inexistente → 404",
+      "method": "GET",
+      "url": "{{ _.base_url }}/cost-centers/999999/budgets/{{ _.budget_month }}",
+      "headers": [],
+      "authentication": {
+        "type": "bearer",
+        "token": "{{ _.token_solicitante_ti }}"
+      },
+      "body": {},
       "description": "Esperado: 404 NOT_FOUND em application/problem+json."
+    },
+    {
+      "_id": "fld_draft",
+      "_type": "request_group",
+      "parentId": "wrk_purchase",
+      "name": "09 Solicitações: criação e rascunho (POST/GET/PUT /requests)",
+      "description": "Rode de cima para baixo: a criação grava request_id e lock_version, que o detalhe e a edição usam. O total é sempre calculado no back-end; valores monetários como string com 2 casas. neededBy usa 2030-12-31 (precisa ser futura).",
+      "metaSortKey": 9
+    },
+    {
+      "_id": "req_draft_criar",
+      "_type": "request",
+      "parentId": "fld_draft",
+      "metaSortKey": 1,
+      "name": "Criar rascunho (Solicitante TI, CC implícito) → 201",
+      "method": "POST",
+      "url": "{{ _.base_url }}/requests",
+      "headers": [
+        {
+          "name": "Content-Type",
+          "value": "application/json"
+        }
+      ],
+      "authentication": {
+        "type": "bearer",
+        "token": "{{ _.token_solicitante_ti }}"
+      },
+      "body": {
+        "mimeType": "application/json",
+        "text": "{\n  \"title\": \"Teclados e mouses\",\n  \"description\": \"Reposição de periféricos da equipe de suporte.\",\n  \"category\": \"EQUIPMENT\",\n  \"neededBy\": \"2030-12-31\",\n  \"items\": [\n    { \"description\": \"Teclado USB\", \"quantity\": 5, \"unitPrice\": \"89.90\" },\n    { \"description\": \"Mouse sem fio\", \"quantity\": 5, \"unitPrice\": 64.5 }\n  ],\n  \"total\": \"1.00\"\n}"
+      },
+      "afterResponseScript": "let body;\ntry { body = insomnia.response.json(); } catch (e) { body = null; }\nif (body && body.id !== undefined && body.lockVersion !== undefined) {\n  insomnia.baseEnvironment.set('request_id', body.id);\n  insomnia.baseEnvironment.set('lock_version', body.lockVersion);\n}",
+      "description": "Sem costCenterId: usa o centro de custo do usuário (CC-TI-01). O campo total enviado é ignorado. Esperado: 201, header Location /requests/{id}, status DRAFT, version 1, total \"772.00\", unitPrice \"64.50\" e allowedActions [EDIT, SUBMIT, CANCEL]. Grava request_id e lock_version."
+    },
+    {
+      "_id": "req_draft_detalhe",
+      "_type": "request",
+      "parentId": "fld_draft",
+      "metaSortKey": 2,
+      "name": "Detalhe do rascunho (dono) → 200",
+      "method": "GET",
+      "url": "{{ _.base_url }}/requests/{{ _.request_id }}",
+      "headers": [],
+      "authentication": {
+        "type": "bearer",
+        "token": "{{ _.token_solicitante_ti }}"
+      },
+      "body": {},
+      "afterResponseScript": "let body;\ntry { body = insomnia.response.json(); } catch (e) { body = null; }\nif (body && body.id !== undefined && body.lockVersion !== undefined) {\n  insomnia.baseEnvironment.set('request_id', body.id);\n  insomnia.baseEnvironment.set('lock_version', body.lockVersion);\n}",
+      "description": "Esperado: 200 com items (subtotal de cada um), steps vazio, submittedAt e competenceMonth null."
+    },
+    {
+      "_id": "req_draft_editar",
+      "_type": "request",
+      "parentId": "fld_draft",
+      "metaSortKey": 3,
+      "name": "Editar rascunho (PUT com lockVersion) → 200",
+      "method": "PUT",
+      "url": "{{ _.base_url }}/requests/{{ _.request_id }}",
+      "headers": [
+        {
+          "name": "Content-Type",
+          "value": "application/json"
+        }
+      ],
+      "authentication": {
+        "type": "bearer",
+        "token": "{{ _.token_solicitante_ti }}"
+      },
+      "body": {
+        "mimeType": "application/json",
+        "text": "{\n  \"title\": \"Teclados, mouses e headsets\",\n  \"description\": \"Reposição de periféricos da equipe de suporte.\",\n  \"category\": \"EQUIPMENT\",\n  \"neededBy\": \"2030-12-31\",\n  \"items\": [\n    { \"description\": \"Teclado USB\", \"quantity\": 5, \"unitPrice\": \"89.90\" },\n    { \"description\": \"Mouse sem fio\", \"quantity\": 5, \"unitPrice\": \"64.50\" },\n    { \"description\": \"Headset\", \"quantity\": 2, \"unitPrice\": \"199.00\" }\n  ],\n  \"lockVersion\": {{ _.lock_version }}\n}"
+      },
+      "afterResponseScript": "let body;\ntry { body = insomnia.response.json(); } catch (e) { body = null; }\nif (body && body.id !== undefined && body.lockVersion !== undefined) {\n  insomnia.baseEnvironment.set('request_id', body.id);\n  insomnia.baseEnvironment.set('lock_version', body.lockVersion);\n}",
+      "description": "Substitui o conteúdo inteiro. Em DRAFT continua na version 1; o lockVersion muda. Esperado: 200 com total \"1170.00\"."
+    },
+    {
+      "_id": "req_draft_outro_ve",
+      "_type": "request",
+      "parentId": "fld_draft",
+      "metaSortKey": 4,
+      "name": "Rascunho visto por outro usuário → 404",
+      "method": "GET",
+      "url": "{{ _.base_url }}/requests/{{ _.request_id }}",
+      "headers": [],
+      "authentication": {
+        "type": "bearer",
+        "token": "{{ _.token_aprovador1_ti }}"
+      },
+      "body": {},
+      "description": "DRAFT só é visível para o dono, qualquer que seja o papel (ADR 003). Esperado: 404 NOT_FOUND, como se não existisse."
+    },
+    {
+      "_id": "req_draft_admin_ve",
+      "_type": "request",
+      "parentId": "fld_draft",
+      "metaSortKey": 5,
+      "name": "Rascunho visto pelo ADMIN → 404",
+      "method": "GET",
+      "url": "{{ _.base_url }}/requests/{{ _.request_id }}",
+      "headers": [],
+      "authentication": {
+        "type": "bearer",
+        "token": "{{ _.token_admin }}"
+      },
+      "body": {},
+      "description": "Nem o ADMIN vê rascunhos alheios. Esperado: 404 NOT_FOUND."
+    },
+    {
+      "_id": "req_draft_inexistente",
+      "_type": "request",
+      "parentId": "fld_draft",
+      "metaSortKey": 6,
+      "name": "Solicitação inexistente → 404",
+      "method": "GET",
+      "url": "{{ _.base_url }}/requests/999999",
+      "headers": [],
+      "authentication": {
+        "type": "bearer",
+        "token": "{{ _.token_solicitante_ti }}"
+      },
+      "body": {},
+      "description": "Esperado: 404 NOT_FOUND."
+    },
+    {
+      "_id": "req_draft_outro_cc",
+      "_type": "request",
+      "parentId": "fld_draft",
+      "metaSortKey": 7,
+      "name": "SOLICITANTE em outro centro de custo → 422",
+      "method": "POST",
+      "url": "{{ _.base_url }}/requests",
+      "headers": [
+        {
+          "name": "Content-Type",
+          "value": "application/json"
+        }
+      ],
+      "authentication": {
+        "type": "bearer",
+        "token": "{{ _.token_solicitante_ti }}"
+      },
+      "body": {
+        "mimeType": "application/json",
+        "text": "{\n  \"costCenterId\": {{ _.cost_center_mnt_id }},\n  \"title\": \"Óleo lubrificante\",\n  \"description\": \"Pedido fora do meu centro de custo.\",\n  \"category\": \"SUPPLIES\",\n  \"neededBy\": \"2030-12-31\",\n  \"items\": [\n    { \"description\": \"Óleo (litro)\", \"quantity\": 10, \"unitPrice\": \"35.00\" }\n  ]\n}"
+      },
+      "description": "Esperado: 422 COST_CENTER_NOT_ALLOWED (só um ADMIN abre solicitações fora do próprio centro de custo)."
+    },
+    {
+      "_id": "req_draft_admin_sem_cc",
+      "_type": "request",
+      "parentId": "fld_draft",
+      "metaSortKey": 8,
+      "name": "ADMIN sem costCenterId → 422",
+      "method": "POST",
+      "url": "{{ _.base_url }}/requests",
+      "headers": [
+        {
+          "name": "Content-Type",
+          "value": "application/json"
+        }
+      ],
+      "authentication": {
+        "type": "bearer",
+        "token": "{{ _.token_admin }}"
+      },
+      "body": {
+        "mimeType": "application/json",
+        "text": "{\n  \"title\": \"Cadeiras\",\n  \"description\": \"ADMIN é global e precisa informar o centro de custo.\",\n  \"category\": \"EQUIPMENT\",\n  \"neededBy\": \"2030-12-31\",\n  \"items\": [\n    { \"description\": \"Cadeira ergonômica\", \"quantity\": 2, \"unitPrice\": \"900.00\" }\n  ]\n}"
+      },
+      "description": "Esperado: 422 COST_CENTER_REQUIRED."
+    },
+    {
+      "_id": "req_draft_admin_cc_inexistente",
+      "_type": "request",
+      "parentId": "fld_draft",
+      "metaSortKey": 9,
+      "name": "ADMIN em centro de custo inexistente → 422",
+      "method": "POST",
+      "url": "{{ _.base_url }}/requests",
+      "headers": [
+        {
+          "name": "Content-Type",
+          "value": "application/json"
+        }
+      ],
+      "authentication": {
+        "type": "bearer",
+        "token": "{{ _.token_admin }}"
+      },
+      "body": {
+        "mimeType": "application/json",
+        "text": "{\n  \"costCenterId\": 99999,\n  \"title\": \"Cadeiras\",\n  \"description\": \"Centro de custo que não existe.\",\n  \"category\": \"EQUIPMENT\",\n  \"neededBy\": \"2030-12-31\",\n  \"items\": [\n    { \"description\": \"Cadeira ergonômica\", \"quantity\": 2, \"unitPrice\": \"900.00\" }\n  ]\n}"
+      },
+      "description": "Esperado: 422 COST_CENTER_NOT_FOUND."
+    },
+    {
+      "_id": "req_draft_admin_mnt",
+      "_type": "request",
+      "parentId": "fld_draft",
+      "metaSortKey": 10,
+      "name": "ADMIN cria no CC-MNT-01 → 201",
+      "method": "POST",
+      "url": "{{ _.base_url }}/requests",
+      "headers": [
+        {
+          "name": "Content-Type",
+          "value": "application/json"
+        }
+      ],
+      "authentication": {
+        "type": "bearer",
+        "token": "{{ _.token_admin }}"
+      },
+      "body": {
+        "mimeType": "application/json",
+        "text": "{\n  \"costCenterId\": {{ _.cost_center_mnt_id }},\n  \"title\": \"Cadeiras para a oficina\",\n  \"description\": \"Pedido aberto pelo ADMIN para outro centro de custo.\",\n  \"category\": \"EQUIPMENT\",\n  \"neededBy\": \"2030-12-31\",\n  \"items\": [\n    { \"description\": \"Cadeira ergonômica\", \"quantity\": 2, \"unitPrice\": \"900.00\" }\n  ]\n}"
+      },
+      "description": "Esperado: 201 com costCenterId 2 e ownerId do ADMIN. Não altera request_id."
+    },
+    {
+      "_id": "req_draft_invalido",
+      "_type": "request",
+      "parentId": "fld_draft",
+      "metaSortKey": 11,
+      "name": "Campos inválidos → 400 com errors[]",
+      "method": "POST",
+      "url": "{{ _.base_url }}/requests",
+      "headers": [
+        {
+          "name": "Content-Type",
+          "value": "application/json"
+        }
+      ],
+      "authentication": {
+        "type": "bearer",
+        "token": "{{ _.token_solicitante_ti }}"
+      },
+      "body": {
+        "mimeType": "application/json",
+        "text": "{\n  \"title\": \"\",\n  \"description\": \"\",\n  \"category\": \"EQUIPMENT\",\n  \"neededBy\": \"2020-01-01\",\n  \"items\": [\n    { \"description\": \"\", \"quantity\": 0, \"unitPrice\": \"10.505\" }\n  ]\n}"
+      },
+      "description": "Esperado: 400 VALIDATION_FAILED com errors[] para title, description, neededBy (data futura), items[0].description, items[0].quantity e items[0].unitPrice (3 casas, nunca arredondado)."
+    },
+    {
+      "_id": "req_draft_sem_itens",
+      "_type": "request",
+      "parentId": "fld_draft",
+      "metaSortKey": 12,
+      "name": "Sem itens → 400",
+      "method": "POST",
+      "url": "{{ _.base_url }}/requests",
+      "headers": [
+        {
+          "name": "Content-Type",
+          "value": "application/json"
+        }
+      ],
+      "authentication": {
+        "type": "bearer",
+        "token": "{{ _.token_solicitante_ti }}"
+      },
+      "body": {
+        "mimeType": "application/json",
+        "text": "{\n  \"title\": \"Vazia\",\n  \"description\": \"Sem itens.\",\n  \"category\": \"OTHER\",\n  \"items\": []\n}"
+      },
+      "description": "Esperado: 400 VALIDATION_FAILED com errors[].field = items (\"deve ter pelo menos um item\")."
+    },
+    {
+      "_id": "req_draft_categoria_invalida",
+      "_type": "request",
+      "parentId": "fld_draft",
+      "metaSortKey": 13,
+      "name": "Categoria desconhecida → 400",
+      "method": "POST",
+      "url": "{{ _.base_url }}/requests",
+      "headers": [
+        {
+          "name": "Content-Type",
+          "value": "application/json"
+        }
+      ],
+      "authentication": {
+        "type": "bearer",
+        "token": "{{ _.token_solicitante_ti }}"
+      },
+      "body": {
+        "mimeType": "application/json",
+        "text": "{\n  \"title\": \"Teste\",\n  \"description\": \"Categoria fora do enum.\",\n  \"category\": \"FOOD\",\n  \"items\": [{ \"description\": \"Item\", \"quantity\": 1, \"unitPrice\": \"10.00\" }]\n}"
+      },
+      "description": "Esperado: 400 MALFORMED_REQUEST (valor fora do enum Category)."
+    },
+    {
+      "_id": "fld_idem",
+      "_type": "request_group",
+      "parentId": "wrk_purchase",
+      "name": "10 Idempotência (Idempotency-Key no POST /requests)",
+      "description": "O primeiro gera uma chave nova (script pré-requisição) e grava em idempotency_key; os seguintes reusam a mesma. Só respostas de sucesso são guardadas; o hash do corpo é normalizado (ordem dos campos, espaços, campos desconhecidos e a grafia do preço não importam).",
+      "metaSortKey": 10
+    },
+    {
+      "_id": "req_idem_primeira",
+      "_type": "request",
+      "parentId": "fld_idem",
+      "metaSortKey": 1,
+      "name": "Primeira chamada com chave nova → 201",
+      "method": "POST",
+      "url": "{{ _.base_url }}/requests",
+      "headers": [
+        {
+          "name": "Content-Type",
+          "value": "application/json"
+        },
+        {
+          "name": "Idempotency-Key",
+          "value": "{{ _.idempotency_key }}"
+        }
+      ],
+      "authentication": {
+        "type": "bearer",
+        "token": "{{ _.token_solicitante_ti }}"
+      },
+      "body": {
+        "mimeType": "application/json",
+        "text": "{\n  \"title\": \"Licença de software de diagramas\",\n  \"description\": \"Uma licença anual.\",\n  \"category\": \"SOFTWARE\",\n  \"neededBy\": \"2030-12-31\",\n  \"items\": [\n    { \"description\": \"Licença anual\", \"quantity\": 1, \"unitPrice\": \"450.00\" }\n  ]\n}"
+      },
+      "preRequestScript": "const key = 'demo-' + Date.now().toString(36) + '-' + Math.random().toString(36).slice(2, 10);\ninsomnia.baseEnvironment.set('idempotency_key', key);",
+      "afterResponseScript": "let body;\ntry { body = insomnia.response.json(); } catch (e) { body = null; }\nif (body && body.id !== undefined && body.lockVersion !== undefined) {\n  insomnia.baseEnvironment.set('request_id', body.id);\n  insomnia.baseEnvironment.set('lock_version', body.lockVersion);\n}",
+      "description": "Esperado: 201 com header Idempotent-Replayed: false. Grava request_id."
+    },
+    {
+      "_id": "req_idem_repeticao",
+      "_type": "request",
+      "parentId": "fld_idem",
+      "metaSortKey": 2,
+      "name": "Repetir mesma chave e corpo → 201 replay",
+      "method": "POST",
+      "url": "{{ _.base_url }}/requests",
+      "headers": [
+        {
+          "name": "Content-Type",
+          "value": "application/json"
+        },
+        {
+          "name": "Idempotency-Key",
+          "value": "{{ _.idempotency_key }}"
+        }
+      ],
+      "authentication": {
+        "type": "bearer",
+        "token": "{{ _.token_solicitante_ti }}"
+      },
+      "body": {
+        "mimeType": "application/json",
+        "text": "{\n  \"title\": \"Licença de software de diagramas\",\n  \"description\": \"Uma licença anual.\",\n  \"category\": \"SOFTWARE\",\n  \"neededBy\": \"2030-12-31\",\n  \"items\": [\n    { \"description\": \"Licença anual\", \"quantity\": 1, \"unitPrice\": 450 }\n  ],\n  \"total\": \"999.99\"\n}"
+      },
+      "description": "Mesmo conteúdo com outra grafia do preço (450 em número) e um campo total extra. Esperado: 201 com Idempotent-Replayed: true e o mesmo id da primeira chamada; nenhuma solicitação nova."
+    },
+    {
+      "_id": "req_idem_corpo_diferente",
+      "_type": "request",
+      "parentId": "fld_idem",
+      "metaSortKey": 3,
+      "name": "Mesma chave, corpo diferente → 409",
+      "method": "POST",
+      "url": "{{ _.base_url }}/requests",
+      "headers": [
+        {
+          "name": "Content-Type",
+          "value": "application/json"
+        },
+        {
+          "name": "Idempotency-Key",
+          "value": "{{ _.idempotency_key }}"
+        }
+      ],
+      "authentication": {
+        "type": "bearer",
+        "token": "{{ _.token_solicitante_ti }}"
+      },
+      "body": {
+        "mimeType": "application/json",
+        "text": "{\n  \"title\": \"Licença de software de diagramas\",\n  \"description\": \"Duas licenças anuais.\",\n  \"category\": \"SOFTWARE\",\n  \"neededBy\": \"2030-12-31\",\n  \"items\": [\n    { \"description\": \"Licença anual\", \"quantity\": 2, \"unitPrice\": \"450.00\" }\n  ]\n}"
+      },
+      "description": "Esperado: 409 IDEMPOTENCY_KEY_REUSED; nada é criado."
+    },
+    {
+      "_id": "req_idem_outro_usuario",
+      "_type": "request",
+      "parentId": "fld_idem",
+      "metaSortKey": 4,
+      "name": "Mesma chave por outro usuário → 201 nova",
+      "method": "POST",
+      "url": "{{ _.base_url }}/requests",
+      "headers": [
+        {
+          "name": "Content-Type",
+          "value": "application/json"
+        },
+        {
+          "name": "Idempotency-Key",
+          "value": "{{ _.idempotency_key }}"
+        }
+      ],
+      "authentication": {
+        "type": "bearer",
+        "token": "{{ _.token_aprovador1_ti }}"
+      },
+      "body": {
+        "mimeType": "application/json",
+        "text": "{\n  \"title\": \"Licença de software de diagramas\",\n  \"description\": \"Uma licença anual.\",\n  \"category\": \"SOFTWARE\",\n  \"neededBy\": \"2030-12-31\",\n  \"items\": [\n    { \"description\": \"Licença anual\", \"quantity\": 1, \"unitPrice\": \"450.00\" }\n  ]\n}"
+      },
+      "description": "A chave é por usuário. Esperado: 201 com Idempotent-Replayed: false e um id novo (dono = Aprovador N1 TI)."
+    },
+    {
+      "_id": "req_idem_chave_invalida",
+      "_type": "request",
+      "parentId": "fld_idem",
+      "metaSortKey": 5,
+      "name": "Chave com espaço → 400",
+      "method": "POST",
+      "url": "{{ _.base_url }}/requests",
+      "headers": [
+        {
+          "name": "Content-Type",
+          "value": "application/json"
+        },
+        {
+          "name": "Idempotency-Key",
+          "value": "chave com espaço"
+        }
+      ],
+      "authentication": {
+        "type": "bearer",
+        "token": "{{ _.token_solicitante_ti }}"
+      },
+      "body": {
+        "mimeType": "application/json",
+        "text": "{\n  \"title\": \"Licença de software de diagramas\",\n  \"description\": \"Uma licença anual.\",\n  \"category\": \"SOFTWARE\",\n  \"neededBy\": \"2030-12-31\",\n  \"items\": [\n    { \"description\": \"Licença anual\", \"quantity\": 1, \"unitPrice\": \"450.00\" }\n  ]\n}"
+      },
+      "description": "A chave deve ter de 1 a 255 caracteres ASCII visíveis. Esperado: 400 VALIDATION_FAILED."
+    },
+    {
+      "_id": "req_idem_sem_chave",
+      "_type": "request",
+      "parentId": "fld_idem",
+      "metaSortKey": 6,
+      "name": "Sem chave → 201 sempre nova",
+      "method": "POST",
+      "url": "{{ _.base_url }}/requests",
+      "headers": [
+        {
+          "name": "Content-Type",
+          "value": "application/json"
+        }
+      ],
+      "authentication": {
+        "type": "bearer",
+        "token": "{{ _.token_solicitante_ti }}"
+      },
+      "body": {
+        "mimeType": "application/json",
+        "text": "{\n  \"title\": \"Licença de software de diagramas\",\n  \"description\": \"Uma licença anual.\",\n  \"category\": \"SOFTWARE\",\n  \"neededBy\": \"2030-12-31\",\n  \"items\": [\n    { \"description\": \"Licença anual\", \"quantity\": 1, \"unitPrice\": \"450.00\" }\n  ]\n}"
+      },
+      "description": "Sem Idempotency-Key cada chamada cria uma solicitação. Esperado: 201 com Idempotent-Replayed: false."
+    },
+    {
+      "_id": "fld_list",
+      "_type": "request_group",
+      "parentId": "wrk_purchase",
+      "name": "11 Listagem e filtros (GET /requests)",
+      "description": "Resposta { data, page, size, totalElements, totalPages }. Padrão: page 0, size 20 (máx. 100), sort createdAt,desc. Sempre dentro da visibilidade: SOLICITANTE vê as próprias; APROVADOR, também as do seu CC (menos rascunhos alheios); ADMIN, todas menos rascunhos alheios.",
+      "metaSortKey": 11
+    },
+    {
+      "_id": "req_list_padrao",
+      "_type": "request",
+      "parentId": "fld_list",
+      "metaSortKey": 1,
+      "name": "Minhas solicitações (Solicitante TI) → 200",
+      "method": "GET",
+      "url": "{{ _.base_url }}/requests",
+      "headers": [],
+      "authentication": {
+        "type": "bearer",
+        "token": "{{ _.token_solicitante_ti }}"
+      },
+      "body": {},
+      "description": "Esperado: só as da Solicitante TI, incluindo os rascunhos dela, das mais novas para as mais antigas."
+    },
+    {
+      "_id": "req_list_aprovador",
+      "_type": "request",
+      "parentId": "fld_list",
+      "metaSortKey": 2,
+      "name": "Visão do Aprovador N1 TI → 200",
+      "method": "GET",
+      "url": "{{ _.base_url }}/requests?status=PENDING_APPROVAL,CHANGES_REQUESTED",
+      "headers": [],
+      "authentication": {
+        "type": "bearer",
+        "token": "{{ _.token_aprovador1_ti }}"
+      },
+      "body": {},
+      "description": "Vários status separados por vírgula. Esperado: as pendentes e devolvidas do CC-TI-01."
+    },
+    {
+      "_id": "req_list_status_repetido",
+      "_type": "request",
+      "parentId": "fld_list",
+      "metaSortKey": 3,
+      "name": "Status repetido na query (Admin) → 200",
+      "method": "GET",
+      "url": "{{ _.base_url }}/requests?status=APPROVED&status=REJECTED",
+      "headers": [],
+      "authentication": {
+        "type": "bearer",
+        "token": "{{ _.token_admin }}"
+      },
+      "body": {},
+      "description": "Mesmo efeito de status=APPROVED,REJECTED. Esperado: as aprovadas e rejeitadas dos dois centros de custo."
+    },
+    {
+      "_id": "req_list_categoria",
+      "_type": "request",
+      "parentId": "fld_list",
+      "metaSortKey": 4,
+      "name": "Por categoria (Admin) → 200",
+      "method": "GET",
+      "url": "{{ _.base_url }}/requests?category=SOFTWARE,SERVICES",
+      "headers": [],
+      "authentication": {
+        "type": "bearer",
+        "token": "{{ _.token_admin }}"
+      },
+      "body": {},
+      "description": "Esperado: só SOFTWARE e SERVICES."
+    },
+    {
+      "_id": "req_list_cc_admin",
+      "_type": "request",
+      "parentId": "fld_list",
+      "metaSortKey": 5,
+      "name": "Por centro de custo (Admin) → 200",
+      "method": "GET",
+      "url": "{{ _.base_url }}/requests?costCenterId={{ _.cost_center_mnt_id }}",
+      "headers": [],
+      "authentication": {
+        "type": "bearer",
+        "token": "{{ _.token_admin }}"
+      },
+      "body": {},
+      "description": "Esperado: as solicitações do CC-MNT-01 que o ADMIN vê."
+    },
+    {
+      "_id": "req_list_cc_fora",
+      "_type": "request",
+      "parentId": "fld_list",
+      "metaSortKey": 6,
+      "name": "Centro de custo que não vejo → página vazia",
+      "method": "GET",
+      "url": "{{ _.base_url }}/requests?costCenterId={{ _.cost_center_mnt_id }}",
+      "headers": [],
+      "authentication": {
+        "type": "bearer",
+        "token": "{{ _.token_aprovador1_ti }}"
+      },
+      "body": {},
+      "description": "Filtrar por um CC fora da visibilidade não é 403: a página vem vazia (totalElements 0)."
+    },
+    {
+      "_id": "req_list_periodo",
+      "_type": "request",
+      "parentId": "fld_list",
+      "metaSortKey": 7,
+      "name": "Por período de criação → 200",
+      "method": "GET",
+      "url": "{{ _.base_url }}/requests?createdFrom={% now 'custom', 'YYYY-MM' %}-01&createdTo={% now 'custom', 'YYYY-MM-DD' %}",
+      "headers": [],
+      "authentication": {
+        "type": "bearer",
+        "token": "{{ _.token_admin }}"
+      },
+      "body": {},
+      "description": "createdFrom e createdTo em yyyy-MM-dd (inclusivos), aqui do dia 1 do mês até hoje."
+    },
+    {
+      "_id": "req_list_ordenar_total",
+      "_type": "request",
+      "parentId": "fld_list",
+      "metaSortKey": 8,
+      "name": "Ordenar por total desc, 5 por página → 200",
+      "method": "GET",
+      "url": "{{ _.base_url }}/requests?sort=total,desc&size=5&page=0",
+      "headers": [],
+      "authentication": {
+        "type": "bearer",
+        "token": "{{ _.token_admin }}"
+      },
+      "body": {},
+      "description": "Campos permitidos: createdAt, updatedAt, status, total, title. Esperado: as 5 de maior valor; totalPages coerente com size 5."
+    },
+    {
+      "_id": "req_list_ordenar_titulo",
+      "_type": "request",
+      "parentId": "fld_list",
+      "metaSortKey": 9,
+      "name": "Ordenar por título (asc padrão) → 200",
+      "method": "GET",
+      "url": "{{ _.base_url }}/requests?sort=title",
+      "headers": [],
+      "authentication": {
+        "type": "bearer",
+        "token": "{{ _.token_admin }}"
+      },
+      "body": {},
+      "description": "Sem direção, vale asc."
+    },
+    {
+      "_id": "req_list_sort_invalido",
+      "_type": "request",
+      "parentId": "fld_list",
+      "metaSortKey": 10,
+      "name": "Campo de ordenação fora da whitelist → 400",
+      "method": "GET",
+      "url": "{{ _.base_url }}/requests?sort=ownerId,desc",
+      "headers": [],
+      "authentication": {
+        "type": "bearer",
+        "token": "{{ _.token_admin }}"
+      },
+      "body": {},
+      "description": "Esperado: 400 VALIDATION_FAILED com errors[].field = sort e a lista de campos permitidos."
+    },
+    {
+      "_id": "req_list_size_grande",
+      "_type": "request",
+      "parentId": "fld_list",
+      "metaSortKey": 11,
+      "name": "size acima de 100 → 400",
+      "method": "GET",
+      "url": "{{ _.base_url }}/requests?size=101",
+      "headers": [],
+      "authentication": {
+        "type": "bearer",
+        "token": "{{ _.token_admin }}"
+      },
+      "body": {},
+      "description": "Esperado: 400 VALIDATION_FAILED."
+    },
+    {
+      "_id": "req_list_status_invalido",
+      "_type": "request",
+      "parentId": "fld_list",
+      "metaSortKey": 12,
+      "name": "Status desconhecido → 400",
+      "method": "GET",
+      "url": "{{ _.base_url }}/requests?status=PAGO",
+      "headers": [],
+      "authentication": {
+        "type": "bearer",
+        "token": "{{ _.token_admin }}"
+      },
+      "body": {},
+      "description": "Esperado: 400 (valor fora do enum RequestStatus)."
+    },
+    {
+      "_id": "fld_flow",
+      "_type": "request_group",
+      "parentId": "wrk_purchase",
+      "name": "12 Fluxo completo: submeter e aprovar a cadeia",
+      "description": "Acima de 10.000,00 a cadeia é NIVEL_1 → NIVEL_2 → ADMIN. Rode de cima para baixo. O orçamento só é consumido na última aprovação; com o CC-TI-01 recém-semeado (26.800,00 disponíveis) o fluxo pode ser repetido duas vezes antes de BUDGET_EXCEEDED.",
+      "metaSortKey": 12
+    },
+    {
+      "_id": "req_flow_criar",
+      "_type": "request",
+      "parentId": "fld_flow",
+      "metaSortKey": 1,
+      "name": "Criar (Solicitante TI, 10.200,00) → 201",
+      "method": "POST",
+      "url": "{{ _.base_url }}/requests",
+      "headers": [
+        {
+          "name": "Content-Type",
+          "value": "application/json"
+        }
+      ],
+      "authentication": {
+        "type": "bearer",
+        "token": "{{ _.token_solicitante_ti }}"
+      },
+      "body": {
+        "mimeType": "application/json",
+        "text": "{\n  \"title\": \"Estações de trabalho para o laboratório\",\n  \"description\": \"Duas estações para testes de carga.\",\n  \"category\": \"EQUIPMENT\",\n  \"neededBy\": \"2030-12-31\",\n  \"items\": [\n    { \"description\": \"Estação de trabalho\", \"quantity\": 2, \"unitPrice\": \"5100.00\" }\n  ]\n}"
+      },
+      "afterResponseScript": "let body;\ntry { body = insomnia.response.json(); } catch (e) { body = null; }\nif (body && body.id !== undefined && body.lockVersion !== undefined) {\n  insomnia.baseEnvironment.set('request_id', body.id);\n  insomnia.baseEnvironment.set('lock_version', body.lockVersion);\n}",
+      "description": "Esperado: 201 DRAFT com total \"10200.00\". Grava request_id e lock_version."
+    },
+    {
+      "_id": "req_flow_submeter",
+      "_type": "request",
+      "parentId": "fld_flow",
+      "metaSortKey": 2,
+      "name": "Submeter → 200 PENDING_APPROVAL",
+      "method": "POST",
+      "url": "{{ _.base_url }}/requests/{{ _.request_id }}/submit",
+      "headers": [
+        {
+          "name": "Content-Type",
+          "value": "application/json"
+        }
+      ],
+      "authentication": {
+        "type": "bearer",
+        "token": "{{ _.token_solicitante_ti }}"
+      },
+      "body": {
+        "mimeType": "application/json",
+        "text": "{\n  \"lockVersion\": {{ _.lock_version }}\n}"
+      },
+      "afterResponseScript": "let body;\ntry { body = insomnia.response.json(); } catch (e) { body = null; }\nif (body && body.id !== undefined && body.lockVersion !== undefined) {\n  insomnia.baseEnvironment.set('request_id', body.id);\n  insomnia.baseEnvironment.set('lock_version', body.lockVersion);\n}",
+      "description": "Esperado: 200 com status PENDING_APPROVAL, submittedAt, competenceMonth (mês atual) e steps NIVEL_1, NIVEL_2 e ADMIN em PENDING. allowedActions do dono: [CANCEL]."
+    },
+    {
+      "_id": "req_flow_caixa_n1",
+      "_type": "request",
+      "parentId": "fld_flow",
+      "metaSortKey": 3,
+      "name": "Caixa do Aprovador N1 TI → contém a solicitação",
+      "method": "GET",
+      "url": "{{ _.base_url }}/approvals/inbox",
+      "headers": [],
+      "authentication": {
+        "type": "bearer",
+        "token": "{{ _.token_aprovador1_ti }}"
+      },
+      "body": {},
+      "description": "Esperado: a solicitação aparece com currentStepLevel NIVEL_1 e o lockVersion atual."
+    },
+    {
+      "_id": "req_flow_detalhe_n1",
+      "_type": "request",
+      "parentId": "fld_flow",
+      "metaSortKey": 4,
+      "name": "Detalhe como Aprovador N1 TI → 200",
+      "method": "GET",
+      "url": "{{ _.base_url }}/requests/{{ _.request_id }}",
+      "headers": [],
+      "authentication": {
+        "type": "bearer",
+        "token": "{{ _.token_aprovador1_ti }}"
+      },
+      "body": {},
+      "afterResponseScript": "let body;\ntry { body = insomnia.response.json(); } catch (e) { body = null; }\nif (body && body.id !== undefined && body.lockVersion !== undefined) {\n  insomnia.baseEnvironment.set('request_id', body.id);\n  insomnia.baseEnvironment.set('lock_version', body.lockVersion);\n}",
+      "description": "Esperado: allowedActions [APPROVE, REJECT, REQUEST_CHANGES] (o front mostra os botões a partir daqui)."
+    },
+    {
+      "_id": "req_flow_aprovar_n1",
+      "_type": "request",
+      "parentId": "fld_flow",
+      "metaSortKey": 5,
+      "name": "Aprovar etapa NIVEL_1 (Aprovador N1 TI) → 200",
+      "method": "POST",
+      "url": "{{ _.base_url }}/requests/{{ _.request_id }}/approve",
+      "headers": [
+        {
+          "name": "Content-Type",
+          "value": "application/json"
+        }
+      ],
+      "authentication": {
+        "type": "bearer",
+        "token": "{{ _.token_aprovador1_ti }}"
+      },
+      "body": {
+        "mimeType": "application/json",
+        "text": "{\n  \"lockVersion\": {{ _.lock_version }},\n  \"comment\": \"De acordo.\"\n}"
+      },
+      "afterResponseScript": "let body;\ntry { body = insomnia.response.json(); } catch (e) { body = null; }\nif (body && body.id !== undefined && body.lockVersion !== undefined) {\n  insomnia.baseEnvironment.set('request_id', body.id);\n  insomnia.baseEnvironment.set('lock_version', body.lockVersion);\n}",
+      "description": "Comentário opcional na aprovação. Esperado: 200, step NIVEL_1 APPROVED com decidedBy/decidedAt; status continua PENDING_APPROVAL."
+    },
+    {
+      "_id": "req_flow_aprovar_n2",
+      "_type": "request",
+      "parentId": "fld_flow",
+      "metaSortKey": 6,
+      "name": "Aprovar etapa NIVEL_2 (Aprovador N2 TI) → 200",
+      "method": "POST",
+      "url": "{{ _.base_url }}/requests/{{ _.request_id }}/approve",
+      "headers": [
+        {
+          "name": "Content-Type",
+          "value": "application/json"
+        }
+      ],
+      "authentication": {
+        "type": "bearer",
+        "token": "{{ _.token_aprovador2_ti }}"
+      },
+      "body": {
+        "mimeType": "application/json",
+        "text": "{\n  \"lockVersion\": {{ _.lock_version }}\n}"
+      },
+      "afterResponseScript": "let body;\ntry { body = insomnia.response.json(); } catch (e) { body = null; }\nif (body && body.id !== undefined && body.lockVersion !== undefined) {\n  insomnia.baseEnvironment.set('request_id', body.id);\n  insomnia.baseEnvironment.set('lock_version', body.lockVersion);\n}",
+      "description": "Esperado: 200, step NIVEL_2 APPROVED; a etapa atual passa a ser ADMIN."
+    },
+    {
+      "_id": "req_flow_aprovar_admin",
+      "_type": "request",
+      "parentId": "fld_flow",
+      "metaSortKey": 7,
+      "name": "Aprovar etapa ADMIN (Admin) → 200 APPROVED",
+      "method": "POST",
+      "url": "{{ _.base_url }}/requests/{{ _.request_id }}/approve",
+      "headers": [
+        {
+          "name": "Content-Type",
+          "value": "application/json"
+        }
+      ],
+      "authentication": {
+        "type": "bearer",
+        "token": "{{ _.token_admin }}"
+      },
+      "body": {
+        "mimeType": "application/json",
+        "text": "{\n  \"lockVersion\": {{ _.lock_version }},\n  \"comment\": \"Liberado.\"\n}"
+      },
+      "afterResponseScript": "let body;\ntry { body = insomnia.response.json(); } catch (e) { body = null; }\nif (body && body.id !== undefined && body.lockVersion !== undefined) {\n  insomnia.baseEnvironment.set('request_id', body.id);\n  insomnia.baseEnvironment.set('lock_version', body.lockVersion);\n}",
+      "description": "Última etapa: consome o orçamento do mês de competência na mesma transação. Esperado: 200 com status APPROVED e allowedActions []."
+    },
+    {
+      "_id": "req_flow_orcamento",
+      "_type": "request",
+      "parentId": "fld_flow",
+      "metaSortKey": 8,
+      "name": "Orçamento do CC-TI-01 depois da aprovação → 200",
+      "method": "GET",
+      "url": "{{ _.base_url }}/cost-centers/{{ _.cost_center_ti_id }}/budgets/{{ _.budget_month }}",
+      "headers": [],
+      "authentication": {
+        "type": "bearer",
+        "token": "{{ _.token_solicitante_ti }}"
+      },
+      "body": {},
+      "description": "Esperado: consumed 10.200,00 maior que antes (33400.00 no primeiro fluxo sobre o seed)."
+    },
+    {
+      "_id": "req_flow_historico",
+      "_type": "request",
+      "parentId": "fld_flow",
+      "metaSortKey": 9,
+      "name": "Histórico → 200",
+      "method": "GET",
+      "url": "{{ _.base_url }}/requests/{{ _.request_id }}/history",
+      "headers": [],
+      "authentication": {
+        "type": "bearer",
+        "token": "{{ _.token_solicitante_ti }}"
+      },
+      "body": {},
+      "description": "Esperado: CREATE, SUBMIT e três APPROVE, em ordem, com actorId, actorRole, fromStatus/toStatus, stepLevel, comment e requestId (o X-Request-Id da chamada)."
+    },
+    {
+      "_id": "req_flow_aprovar_de_novo",
+      "_type": "request",
+      "parentId": "fld_flow",
+      "metaSortKey": 10,
+      "name": "Aprovar solicitação já aprovada → 422",
+      "method": "POST",
+      "url": "{{ _.base_url }}/requests/{{ _.request_id }}/approve",
+      "headers": [
+        {
+          "name": "Content-Type",
+          "value": "application/json"
+        }
+      ],
+      "authentication": {
+        "type": "bearer",
+        "token": "{{ _.token_admin }}"
+      },
+      "body": {
+        "mimeType": "application/json",
+        "text": "{\n  \"lockVersion\": {{ _.lock_version }}\n}"
+      },
+      "description": "Estado final não aceita ações. Esperado: 422 INVALID_TRANSITION."
+    },
+    {
+      "_id": "fld_versions",
+      "_type": "request_group",
+      "parentId": "wrk_purchase",
+      "name": "13 Devolução para ajuste e nova versão",
+      "description": "Rode de cima para baixo. Editar uma solicitação devolvida cria a v2; a v1 fica congelada e a cadeia recomeça do zero no reenvio (ADR 002).",
+      "metaSortKey": 13
+    },
+    {
+      "_id": "req_ver_criar",
+      "_type": "request",
+      "parentId": "fld_versions",
+      "metaSortKey": 1,
+      "name": "Criar (Solicitante TI, 2.500,00) → 201",
+      "method": "POST",
+      "url": "{{ _.base_url }}/requests",
+      "headers": [
+        {
+          "name": "Content-Type",
+          "value": "application/json"
+        }
+      ],
+      "authentication": {
+        "type": "bearer",
+        "token": "{{ _.token_solicitante_ti }}"
+      },
+      "body": {
+        "mimeType": "application/json",
+        "text": "{\n  \"title\": \"Consultoria de rede\",\n  \"description\": \"Revisão da topologia da rede do escritório.\",\n  \"category\": \"SERVICES\",\n  \"neededBy\": \"2030-12-31\",\n  \"items\": [\n    { \"description\": \"Consultoria (diária)\", \"quantity\": 1, \"unitPrice\": \"2500.00\" }\n  ]\n}"
+      },
+      "afterResponseScript": "let body;\ntry { body = insomnia.response.json(); } catch (e) { body = null; }\nif (body && body.id !== undefined && body.lockVersion !== undefined) {\n  insomnia.baseEnvironment.set('request_id', body.id);\n  insomnia.baseEnvironment.set('lock_version', body.lockVersion);\n}",
+      "description": "Entre 1.000,00 e 10.000,00: cadeia NIVEL_1 → NIVEL_2."
+    },
+    {
+      "_id": "req_ver_submeter",
+      "_type": "request",
+      "parentId": "fld_versions",
+      "metaSortKey": 2,
+      "name": "Submeter → 200",
+      "method": "POST",
+      "url": "{{ _.base_url }}/requests/{{ _.request_id }}/submit",
+      "headers": [
+        {
+          "name": "Content-Type",
+          "value": "application/json"
+        }
+      ],
+      "authentication": {
+        "type": "bearer",
+        "token": "{{ _.token_solicitante_ti }}"
+      },
+      "body": {
+        "mimeType": "application/json",
+        "text": "{\n  \"lockVersion\": {{ _.lock_version }}\n}"
+      },
+      "afterResponseScript": "let body;\ntry { body = insomnia.response.json(); } catch (e) { body = null; }\nif (body && body.id !== undefined && body.lockVersion !== undefined) {\n  insomnia.baseEnvironment.set('request_id', body.id);\n  insomnia.baseEnvironment.set('lock_version', body.lockVersion);\n}",
+      "description": "Esperado: PENDING_APPROVAL com steps NIVEL_1 e NIVEL_2."
+    },
+    {
+      "_id": "req_ver_devolver_curto",
+      "_type": "request",
+      "parentId": "fld_versions",
+      "metaSortKey": 3,
+      "name": "Devolver com comentário curto → 422",
+      "method": "POST",
+      "url": "{{ _.base_url }}/requests/{{ _.request_id }}/request-changes",
+      "headers": [
+        {
+          "name": "Content-Type",
+          "value": "application/json"
+        }
+      ],
+      "authentication": {
+        "type": "bearer",
+        "token": "{{ _.token_aprovador1_ti }}"
+      },
+      "body": {
+        "mimeType": "application/json",
+        "text": "{\n  \"lockVersion\": {{ _.lock_version }},\n  \"comment\": \"Ajuste\"\n}"
+      },
+      "description": "Devolver e rejeitar exigem comentário com pelo menos 10 caracteres. Esperado: 422 COMMENT_REQUIRED (recebido: 6)."
+    },
+    {
+      "_id": "req_ver_devolver",
+      "_type": "request",
+      "parentId": "fld_versions",
+      "metaSortKey": 4,
+      "name": "Devolver para ajuste (Aprovador N1 TI) → 200",
+      "method": "POST",
+      "url": "{{ _.base_url }}/requests/{{ _.request_id }}/request-changes",
+      "headers": [
+        {
+          "name": "Content-Type",
+          "value": "application/json"
+        }
+      ],
+      "authentication": {
+        "type": "bearer",
+        "token": "{{ _.token_aprovador1_ti }}"
+      },
+      "body": {
+        "mimeType": "application/json",
+        "text": "{\n  \"lockVersion\": {{ _.lock_version }},\n  \"comment\": \"Detalhe melhor o escopo do serviço.\"\n}"
+      },
+      "afterResponseScript": "let body;\ntry { body = insomnia.response.json(); } catch (e) { body = null; }\nif (body && body.id !== undefined && body.lockVersion !== undefined) {\n  insomnia.baseEnvironment.set('request_id', body.id);\n  insomnia.baseEnvironment.set('lock_version', body.lockVersion);\n}",
+      "description": "Esperado: 200 com status CHANGES_REQUESTED; allowedActions do dono passa a ter EDIT e CANCEL."
+    },
+    {
+      "_id": "req_ver_editar",
+      "_type": "request",
+      "parentId": "fld_versions",
+      "metaSortKey": 5,
+      "name": "Editar a devolvida → 200 com version 2",
+      "method": "PUT",
+      "url": "{{ _.base_url }}/requests/{{ _.request_id }}",
+      "headers": [
+        {
+          "name": "Content-Type",
+          "value": "application/json"
+        }
+      ],
+      "authentication": {
+        "type": "bearer",
+        "token": "{{ _.token_solicitante_ti }}"
+      },
+      "body": {
+        "mimeType": "application/json",
+        "text": "{\n  \"title\": \"Consultoria de rede (escopo detalhado)\",\n  \"description\": \"Revisão da topologia, segmentação de VLANs e relatório final.\",\n  \"category\": \"SERVICES\",\n  \"neededBy\": \"2030-12-31\",\n  \"items\": [\n    { \"description\": \"Consultoria (diária)\", \"quantity\": 2, \"unitPrice\": \"2500.00\" }\n  ],\n  \"lockVersion\": {{ _.lock_version }}\n}"
+      },
+      "afterResponseScript": "let body;\ntry { body = insomnia.response.json(); } catch (e) { body = null; }\nif (body && body.id !== undefined && body.lockVersion !== undefined) {\n  insomnia.baseEnvironment.set('request_id', body.id);\n  insomnia.baseEnvironment.set('lock_version', body.lockVersion);\n}",
+      "description": "A v1 já foi submetida e é imutável: a edição abre a v2 (version 2), ainda em CHANGES_REQUESTED, com total \"5000.00\"."
+    },
+    {
+      "_id": "req_ver_listar",
+      "_type": "request",
+      "parentId": "fld_versions",
+      "metaSortKey": 6,
+      "name": "Listar versões → 200",
+      "method": "GET",
+      "url": "{{ _.base_url }}/requests/{{ _.request_id }}/versions",
+      "headers": [],
+      "authentication": {
+        "type": "bearer",
+        "token": "{{ _.token_solicitante_ti }}"
+      },
+      "body": {},
+      "description": "Esperado: lista resumida com as versões 1 e 2."
+    },
+    {
+      "_id": "req_ver_v1",
+      "_type": "request",
+      "parentId": "fld_versions",
+      "metaSortKey": 7,
+      "name": "Versão 1 congelada → 200",
+      "method": "GET",
+      "url": "{{ _.base_url }}/requests/{{ _.request_id }}/versions/1",
+      "headers": [],
+      "authentication": {
+        "type": "bearer",
+        "token": "{{ _.token_solicitante_ti }}"
+      },
+      "body": {},
+      "description": "Esperado: o conteúdo original (1 diária, total \"2500.00\") e as etapas da v1, com o NIVEL_1 devolvido."
+    },
+    {
+      "_id": "req_ver_inexistente",
+      "_type": "request",
+      "parentId": "fld_versions",
+      "metaSortKey": 8,
+      "name": "Versão inexistente → 404",
+      "method": "GET",
+      "url": "{{ _.base_url }}/requests/{{ _.request_id }}/versions/99",
+      "headers": [],
+      "authentication": {
+        "type": "bearer",
+        "token": "{{ _.token_solicitante_ti }}"
+      },
+      "body": {},
+      "description": "Esperado: 404 NOT_FOUND."
+    },
+    {
+      "_id": "req_ver_reenviar",
+      "_type": "request",
+      "parentId": "fld_versions",
+      "metaSortKey": 9,
+      "name": "Reenviar a v2 → 200",
+      "method": "POST",
+      "url": "{{ _.base_url }}/requests/{{ _.request_id }}/submit",
+      "headers": [
+        {
+          "name": "Content-Type",
+          "value": "application/json"
+        }
+      ],
+      "authentication": {
+        "type": "bearer",
+        "token": "{{ _.token_solicitante_ti }}"
+      },
+      "body": {
+        "mimeType": "application/json",
+        "text": "{\n  \"lockVersion\": {{ _.lock_version }}\n}"
+      },
+      "afterResponseScript": "let body;\ntry { body = insomnia.response.json(); } catch (e) { body = null; }\nif (body && body.id !== undefined && body.lockVersion !== undefined) {\n  insomnia.baseEnvironment.set('request_id', body.id);\n  insomnia.baseEnvironment.set('lock_version', body.lockVersion);\n}",
+      "description": "Esperado: PENDING_APPROVAL com a cadeia recalculada para a v2 (NIVEL_1 → NIVEL_2), todas as etapas PENDING."
+    },
+    {
+      "_id": "req_ver_historico",
+      "_type": "request",
+      "parentId": "fld_versions",
+      "metaSortKey": 10,
+      "name": "Histórico com as duas versões → 200",
+      "method": "GET",
+      "url": "{{ _.base_url }}/requests/{{ _.request_id }}/history",
+      "headers": [],
+      "authentication": {
+        "type": "bearer",
+        "token": "{{ _.token_aprovador1_ti }}"
+      },
+      "body": {},
+      "description": "Esperado: CREATE, SUBMIT, REQUEST_CHANGES (version 1) e EDIT, SUBMIT (version 2)."
+    },
+    {
+      "_id": "fld_reject_cancel",
+      "_type": "request_group",
+      "parentId": "wrk_purchase",
+      "name": "14 Rejeição, cancelamento e estados finais",
+      "description": "Rode de cima para baixo. APPROVED, REJECTED e CANCELLED não aceitam nenhuma ação (422 INVALID_TRANSITION).",
+      "metaSortKey": 14
+    },
+    {
+      "_id": "req_rej_criar",
+      "_type": "request",
+      "parentId": "fld_reject_cancel",
+      "metaSortKey": 1,
+      "name": "Criar (Solicitante TI) → 201",
+      "method": "POST",
+      "url": "{{ _.base_url }}/requests",
+      "headers": [
+        {
+          "name": "Content-Type",
+          "value": "application/json"
+        }
+      ],
+      "authentication": {
+        "type": "bearer",
+        "token": "{{ _.token_solicitante_ti }}"
+      },
+      "body": {
+        "mimeType": "application/json",
+        "text": "{\n  \"title\": \"Viagem para treinamento\",\n  \"description\": \"Passagem para o treinamento anual.\",\n  \"category\": \"TRAVEL\",\n  \"neededBy\": \"2030-12-31\",\n  \"items\": [\n    { \"description\": \"Passagem aérea\", \"quantity\": 1, \"unitPrice\": \"850.00\" }\n  ]\n}"
+      },
+      "afterResponseScript": "let body;\ntry { body = insomnia.response.json(); } catch (e) { body = null; }\nif (body && body.id !== undefined && body.lockVersion !== undefined) {\n  insomnia.baseEnvironment.set('request_id', body.id);\n  insomnia.baseEnvironment.set('lock_version', body.lockVersion);\n}",
+      "description": ""
+    },
+    {
+      "_id": "req_rej_submeter",
+      "_type": "request",
+      "parentId": "fld_reject_cancel",
+      "metaSortKey": 2,
+      "name": "Submeter → 200",
+      "method": "POST",
+      "url": "{{ _.base_url }}/requests/{{ _.request_id }}/submit",
+      "headers": [
+        {
+          "name": "Content-Type",
+          "value": "application/json"
+        }
+      ],
+      "authentication": {
+        "type": "bearer",
+        "token": "{{ _.token_solicitante_ti }}"
+      },
+      "body": {
+        "mimeType": "application/json",
+        "text": "{\n  \"lockVersion\": {{ _.lock_version }}\n}"
+      },
+      "afterResponseScript": "let body;\ntry { body = insomnia.response.json(); } catch (e) { body = null; }\nif (body && body.id !== undefined && body.lockVersion !== undefined) {\n  insomnia.baseEnvironment.set('request_id', body.id);\n  insomnia.baseEnvironment.set('lock_version', body.lockVersion);\n}",
+      "description": "Até 1.000,00: só NIVEL_1."
+    },
+    {
+      "_id": "req_rej_sem_comentario",
+      "_type": "request",
+      "parentId": "fld_reject_cancel",
+      "metaSortKey": 3,
+      "name": "Rejeitar sem comentário → 422",
+      "method": "POST",
+      "url": "{{ _.base_url }}/requests/{{ _.request_id }}/reject",
+      "headers": [
+        {
+          "name": "Content-Type",
+          "value": "application/json"
+        }
+      ],
+      "authentication": {
+        "type": "bearer",
+        "token": "{{ _.token_aprovador1_ti }}"
+      },
+      "body": {
+        "mimeType": "application/json",
+        "text": "{\n  \"lockVersion\": {{ _.lock_version }}\n}"
+      },
+      "description": "Esperado: 422 COMMENT_REQUIRED."
+    },
+    {
+      "_id": "req_rej_rejeitar",
+      "_type": "request",
+      "parentId": "fld_reject_cancel",
+      "metaSortKey": 4,
+      "name": "Rejeitar com comentário (Aprovador N1 TI) → 200",
+      "method": "POST",
+      "url": "{{ _.base_url }}/requests/{{ _.request_id }}/reject",
+      "headers": [
+        {
+          "name": "Content-Type",
+          "value": "application/json"
+        }
+      ],
+      "authentication": {
+        "type": "bearer",
+        "token": "{{ _.token_aprovador1_ti }}"
+      },
+      "body": {
+        "mimeType": "application/json",
+        "text": "{\n  \"lockVersion\": {{ _.lock_version }},\n  \"comment\": \"Treinamento será online este ano.\"\n}"
+      },
+      "afterResponseScript": "let body;\ntry { body = insomnia.response.json(); } catch (e) { body = null; }\nif (body && body.id !== undefined && body.lockVersion !== undefined) {\n  insomnia.baseEnvironment.set('request_id', body.id);\n  insomnia.baseEnvironment.set('lock_version', body.lockVersion);\n}",
+      "description": "Esperado: 200 com status REJECTED, step NIVEL_1 REJECTED e allowedActions []."
+    },
+    {
+      "_id": "req_rej_cancelar_final",
+      "_type": "request",
+      "parentId": "fld_reject_cancel",
+      "metaSortKey": 5,
+      "name": "Cancelar uma rejeitada → 422",
+      "method": "POST",
+      "url": "{{ _.base_url }}/requests/{{ _.request_id }}/cancel",
+      "headers": [
+        {
+          "name": "Content-Type",
+          "value": "application/json"
+        }
+      ],
+      "authentication": {
+        "type": "bearer",
+        "token": "{{ _.token_solicitante_ti }}"
+      },
+      "body": {
+        "mimeType": "application/json",
+        "text": "{\n  \"lockVersion\": {{ _.lock_version }},\n  \"comment\": \"Tentando cancelar.\"\n}"
+      },
+      "description": "Esperado: 422 INVALID_TRANSITION."
+    },
+    {
+      "_id": "req_cancel_criar",
+      "_type": "request",
+      "parentId": "fld_reject_cancel",
+      "metaSortKey": 6,
+      "name": "Criar outro rascunho → 201",
+      "method": "POST",
+      "url": "{{ _.base_url }}/requests",
+      "headers": [
+        {
+          "name": "Content-Type",
+          "value": "application/json"
+        }
+      ],
+      "authentication": {
+        "type": "bearer",
+        "token": "{{ _.token_solicitante_ti }}"
+      },
+      "body": {
+        "mimeType": "application/json",
+        "text": "{\n  \"title\": \"Água mineral\",\n  \"description\": \"Galões para o bebedouro.\",\n  \"category\": \"SUPPLIES\",\n  \"neededBy\": \"2030-12-31\",\n  \"items\": [\n    { \"description\": \"Galão 20 L\", \"quantity\": 10, \"unitPrice\": \"18.00\" }\n  ]\n}"
+      },
+      "afterResponseScript": "let body;\ntry { body = insomnia.response.json(); } catch (e) { body = null; }\nif (body && body.id !== undefined && body.lockVersion !== undefined) {\n  insomnia.baseEnvironment.set('request_id', body.id);\n  insomnia.baseEnvironment.set('lock_version', body.lockVersion);\n}",
+      "description": ""
+    },
+    {
+      "_id": "req_cancel_outro",
+      "_type": "request",
+      "parentId": "fld_reject_cancel",
+      "metaSortKey": 7,
+      "name": "Cancelar rascunho alheio → 404",
+      "method": "POST",
+      "url": "{{ _.base_url }}/requests/{{ _.request_id }}/cancel",
+      "headers": [
+        {
+          "name": "Content-Type",
+          "value": "application/json"
+        }
+      ],
+      "authentication": {
+        "type": "bearer",
+        "token": "{{ _.token_solicitante_mnt }}"
+      },
+      "body": {
+        "mimeType": "application/json",
+        "text": "{\n  \"lockVersion\": {{ _.lock_version }}\n}"
+      },
+      "description": "Fora da visibilidade vem antes de qualquer outra regra. Esperado: 404 NOT_FOUND."
+    },
+    {
+      "_id": "req_cancel_cancelar",
+      "_type": "request",
+      "parentId": "fld_reject_cancel",
+      "metaSortKey": 8,
+      "name": "Cancelar o rascunho (dono) → 200",
+      "method": "POST",
+      "url": "{{ _.base_url }}/requests/{{ _.request_id }}/cancel",
+      "headers": [
+        {
+          "name": "Content-Type",
+          "value": "application/json"
+        }
+      ],
+      "authentication": {
+        "type": "bearer",
+        "token": "{{ _.token_solicitante_ti }}"
+      },
+      "body": {
+        "mimeType": "application/json",
+        "text": "{\n  \"lockVersion\": {{ _.lock_version }},\n  \"comment\": \"Compra feita por outro setor.\"\n}"
+      },
+      "afterResponseScript": "let body;\ntry { body = insomnia.response.json(); } catch (e) { body = null; }\nif (body && body.id !== undefined && body.lockVersion !== undefined) {\n  insomnia.baseEnvironment.set('request_id', body.id);\n  insomnia.baseEnvironment.set('lock_version', body.lockVersion);\n}",
+      "description": "Comentário opcional, vai para o histórico. Esperado: 200 com status CANCELLED."
+    },
+    {
+      "_id": "req_cancel_editar_final",
+      "_type": "request",
+      "parentId": "fld_reject_cancel",
+      "metaSortKey": 9,
+      "name": "Editar uma cancelada → 422",
+      "method": "PUT",
+      "url": "{{ _.base_url }}/requests/{{ _.request_id }}",
+      "headers": [
+        {
+          "name": "Content-Type",
+          "value": "application/json"
+        }
+      ],
+      "authentication": {
+        "type": "bearer",
+        "token": "{{ _.token_solicitante_ti }}"
+      },
+      "body": {
+        "mimeType": "application/json",
+        "text": "{\n  \"title\": \"Água mineral\",\n  \"description\": \"Galões para o bebedouro.\",\n  \"category\": \"SUPPLIES\",\n  \"neededBy\": \"2030-12-31\",\n  \"items\": [\n    { \"description\": \"Galão 20 L\", \"quantity\": 12, \"unitPrice\": \"18.00\" }\n  ],\n  \"lockVersion\": {{ _.lock_version }}\n}"
+      },
+      "description": "Esperado: 422 INVALID_TRANSITION."
+    },
+    {
+      "_id": "fld_rules",
+      "_type": "request_group",
+      "parentId": "wrk_purchase",
+      "name": "15 Regras da cadeia e orçamento (dados do seed)",
+      "description": "Usa as solicitações do seed pelos ids seed_req_* (banco recém-semeado). Cada \"Detalhe\" grava request_id e lock_version para a ação seguinte. Ordem das checagens: 404 (visibilidade) → 403 (papel) → 409 (lockVersion) → 422 (regras). Alguns passos aprovam solicitações do seed; para repetir, recrie o banco.",
+      "metaSortKey": 15
+    },
+    {
+      "_id": "req_rules_notebooks_detalhe",
+      "_type": "request",
+      "parentId": "fld_rules",
+      "metaSortKey": 1,
+      "name": "Detalhe \"Notebooks\" (Aprovador N1 TI) → 200",
+      "method": "GET",
+      "url": "{{ _.base_url }}/requests/{{ _.seed_req_notebooks }}",
+      "headers": [],
+      "authentication": {
+        "type": "bearer",
+        "token": "{{ _.token_aprovador1_ti }}"
+      },
+      "body": {},
+      "afterResponseScript": "let body;\ntry { body = insomnia.response.json(); } catch (e) { body = null; }\nif (body && body.id !== undefined && body.lockVersion !== undefined) {\n  insomnia.baseEnvironment.set('request_id', body.id);\n  insomnia.baseEnvironment.set('lock_version', body.lockVersion);\n}",
+      "description": "Seed: 14.699,70, NIVEL_1 já aprovado pelo próprio Aprovador N1, aguardando NIVEL_2. Esperado: allowedActions []."
+    },
+    {
+      "_id": "req_rules_nivel_insuficiente",
+      "_type": "request",
+      "parentId": "fld_rules",
+      "metaSortKey": 2,
+      "name": "NIVEL_1 aprova etapa NIVEL_2 → 422",
+      "method": "POST",
+      "url": "{{ _.base_url }}/requests/{{ _.request_id }}/approve",
+      "headers": [
+        {
+          "name": "Content-Type",
+          "value": "application/json"
+        }
+      ],
+      "authentication": {
+        "type": "bearer",
+        "token": "{{ _.token_aprovador1_ti }}"
+      },
+      "body": {
+        "mimeType": "application/json",
+        "text": "{\n  \"lockVersion\": {{ _.lock_version }}\n}"
+      },
+      "description": "Esperado: 422 APPROVER_NOT_ELIGIBLE (\"a etapa atual é NIVEL_2 e exige um APROVADOR NIVEL_2 ou um ADMIN\")."
+    },
+    {
+      "_id": "req_rules_licencas_detalhe",
+      "_type": "request",
+      "parentId": "fld_rules",
+      "metaSortKey": 3,
+      "name": "Detalhe \"Licenças de IDE\" (Solicitante TI) → 200",
+      "method": "GET",
+      "url": "{{ _.base_url }}/requests/{{ _.seed_req_licencas }}",
+      "headers": [],
+      "authentication": {
+        "type": "bearer",
+        "token": "{{ _.token_solicitante_ti }}"
+      },
+      "body": {},
+      "afterResponseScript": "let body;\ntry { body = insomnia.response.json(); } catch (e) { body = null; }\nif (body && body.id !== undefined && body.lockVersion !== undefined) {\n  insomnia.baseEnvironment.set('request_id', body.id);\n  insomnia.baseEnvironment.set('lock_version', body.lockVersion);\n}",
+      "description": "Seed: SOFTWARE de 899,00, cadeia NIVEL_1 → ADMIN (SOFTWARE sempre exige ADMIN), aguardando NIVEL_1."
+    },
+    {
+      "_id": "req_rules_solicitante_aprova",
+      "_type": "request",
+      "parentId": "fld_rules",
+      "metaSortKey": 4,
+      "name": "SOLICITANTE aprova → 403",
+      "method": "POST",
+      "url": "{{ _.base_url }}/requests/{{ _.request_id }}/approve",
+      "headers": [
+        {
+          "name": "Content-Type",
+          "value": "application/json"
+        }
+      ],
+      "authentication": {
+        "type": "bearer",
+        "token": "{{ _.token_solicitante_ti }}"
+      },
+      "body": {
+        "mimeType": "application/json",
+        "text": "{\n  \"lockVersion\": {{ _.lock_version }}\n}"
+      },
+      "description": "Decisão de etapa exige APROVADOR ou ADMIN. Esperado: 403 ACCESS_DENIED."
+    },
+    {
+      "_id": "req_rules_nao_dono_cancela",
+      "_type": "request",
+      "parentId": "fld_rules",
+      "metaSortKey": 5,
+      "name": "Aprovador cancela pedido alheio → 422",
+      "method": "POST",
+      "url": "{{ _.base_url }}/requests/{{ _.request_id }}/cancel",
+      "headers": [
+        {
+          "name": "Content-Type",
+          "value": "application/json"
+        }
+      ],
+      "authentication": {
+        "type": "bearer",
+        "token": "{{ _.token_aprovador1_ti }}"
+      },
+      "body": {
+        "mimeType": "application/json",
+        "text": "{\n  \"lockVersion\": {{ _.lock_version }}\n}"
+      },
+      "description": "Só o dono ou um ADMIN cancela. Esperado: 422 NOT_REQUEST_OWNER."
+    },
+    {
+      "_id": "req_rules_outro_cc",
+      "_type": "request",
+      "parentId": "fld_rules",
+      "metaSortKey": 6,
+      "name": "Aprovador de outro centro de custo → 404",
+      "method": "GET",
+      "url": "{{ _.base_url }}/requests/{{ _.request_id }}",
+      "headers": [],
+      "authentication": {
+        "type": "bearer",
+        "token": "{{ _.token_aprovador1_mnt }}"
+      },
+      "body": {},
+      "description": "O Aprovador N1 MNT não vê solicitações do CC-TI-01. Esperado: 404 NOT_FOUND."
+    },
+    {
+      "_id": "req_rules_ferramentas_detalhe",
+      "_type": "request",
+      "parentId": "fld_rules",
+      "metaSortKey": 7,
+      "name": "Detalhe \"Kit de ferramentas\" (Aprovador N2 MNT) → 200",
+      "method": "GET",
+      "url": "{{ _.base_url }}/requests/{{ _.seed_req_ferramentas }}",
+      "headers": [],
+      "authentication": {
+        "type": "bearer",
+        "token": "{{ _.token_aprovador2_mnt }}"
+      },
+      "body": {},
+      "afterResponseScript": "let body;\ntry { body = insomnia.response.json(); } catch (e) { body = null; }\nif (body && body.id !== undefined && body.lockVersion !== undefined) {\n  insomnia.baseEnvironment.set('request_id', body.id);\n  insomnia.baseEnvironment.set('lock_version', body.lockVersion);\n}",
+      "description": "Seed: 1.500,00 no CC-MNT-01, aguardando NIVEL_2 (última etapa). O CC tem só 800,00 disponíveis."
+    },
+    {
+      "_id": "req_rules_orcamento_estourado",
+      "_type": "request",
+      "parentId": "fld_rules",
+      "metaSortKey": 8,
+      "name": "Aprovar acima do disponível → 422",
+      "method": "POST",
+      "url": "{{ _.base_url }}/requests/{{ _.request_id }}/approve",
+      "headers": [
+        {
+          "name": "Content-Type",
+          "value": "application/json"
+        }
+      ],
+      "authentication": {
+        "type": "bearer",
+        "token": "{{ _.token_aprovador2_mnt }}"
+      },
+      "body": {
+        "mimeType": "application/json",
+        "text": "{\n  \"lockVersion\": {{ _.lock_version }}\n}"
+      },
+      "description": "Esperado: 422 BUDGET_EXCEEDED com o valor pedido e o disponível (R$) no detail; nada muda (etapa e orçamento)."
+    },
+    {
+      "_id": "req_rules_monitoramento_detalhe",
+      "_type": "request",
+      "parentId": "fld_rules",
+      "metaSortKey": 9,
+      "name": "Detalhe \"Ferramenta de monitoramento\" (Aprovador N2 TI) → 200",
+      "method": "GET",
+      "url": "{{ _.base_url }}/requests/{{ _.seed_req_monitoramento }}",
+      "headers": [],
+      "authentication": {
+        "type": "bearer",
+        "token": "{{ _.token_aprovador2_ti }}"
+      },
+      "body": {},
+      "afterResponseScript": "let body;\ntry { body = insomnia.response.json(); } catch (e) { body = null; }\nif (body && body.id !== undefined && body.lockVersion !== undefined) {\n  insomnia.baseEnvironment.set('request_id', body.id);\n  insomnia.baseEnvironment.set('lock_version', body.lockVersion);\n}",
+      "description": "Seed: devolvida, editada e reenviada; está na version 2 (3.600,00), cadeia NIVEL_1 → NIVEL_2, aguardando NIVEL_1."
+    },
+    {
+      "_id": "req_rules_n2_aprova_n1",
+      "_type": "request",
+      "parentId": "fld_rules",
+      "metaSortKey": 10,
+      "name": "NIVEL_2 aprova a etapa NIVEL_1 → 200",
+      "method": "POST",
+      "url": "{{ _.base_url }}/requests/{{ _.request_id }}/approve",
+      "headers": [
+        {
+          "name": "Content-Type",
+          "value": "application/json"
+        }
+      ],
+      "authentication": {
+        "type": "bearer",
+        "token": "{{ _.token_aprovador2_ti }}"
+      },
+      "body": {
+        "mimeType": "application/json",
+        "text": "{\n  \"lockVersion\": {{ _.lock_version }}\n}"
+      },
+      "afterResponseScript": "let body;\ntry { body = insomnia.response.json(); } catch (e) { body = null; }\nif (body && body.id !== undefined && body.lockVersion !== undefined) {\n  insomnia.baseEnvironment.set('request_id', body.id);\n  insomnia.baseEnvironment.set('lock_version', body.lockVersion);\n}",
+      "description": "Nível maior pode decidir etapa menor. Esperado: 200 com NIVEL_1 APPROVED (decidedBy = Aprovador N2 TI). Muda o seed."
+    },
+    {
+      "_id": "req_rules_aprovador_repetido",
+      "_type": "request",
+      "parentId": "fld_rules",
+      "metaSortKey": 11,
+      "name": "Mesmo aprovador na etapa seguinte → 422",
+      "method": "POST",
+      "url": "{{ _.base_url }}/requests/{{ _.request_id }}/approve",
+      "headers": [
+        {
+          "name": "Content-Type",
+          "value": "application/json"
+        }
+      ],
+      "authentication": {
+        "type": "bearer",
+        "token": "{{ _.token_aprovador2_ti }}"
+      },
+      "body": {
+        "mimeType": "application/json",
+        "text": "{\n  \"lockVersion\": {{ _.lock_version }}\n}"
+      },
+      "description": "Quem aprovou uma etapa não aprova outra da mesma versão. Esperado: 422 DUPLICATE_APPROVER."
+    },
+    {
+      "_id": "req_rules_admin_cria",
+      "_type": "request",
+      "parentId": "fld_rules",
+      "metaSortKey": 12,
+      "name": "ADMIN cria pedido no CC-TI-01 → 201",
+      "method": "POST",
+      "url": "{{ _.base_url }}/requests",
+      "headers": [
+        {
+          "name": "Content-Type",
+          "value": "application/json"
+        }
+      ],
+      "authentication": {
+        "type": "bearer",
+        "token": "{{ _.token_admin }}"
+      },
+      "body": {
+        "mimeType": "application/json",
+        "text": "{\n  \"costCenterId\": {{ _.cost_center_ti_id }},\n  \"title\": \"Licença de ferramenta de auditoria\",\n  \"description\": \"Pedido do próprio ADMIN.\",\n  \"category\": \"SOFTWARE\",\n  \"neededBy\": \"2030-12-31\",\n  \"items\": [\n    { \"description\": \"Licença anual\", \"quantity\": 1, \"unitPrice\": \"450.00\" }\n  ]\n}"
+      },
+      "afterResponseScript": "let body;\ntry { body = insomnia.response.json(); } catch (e) { body = null; }\nif (body && body.id !== undefined && body.lockVersion !== undefined) {\n  insomnia.baseEnvironment.set('request_id', body.id);\n  insomnia.baseEnvironment.set('lock_version', body.lockVersion);\n}",
+      "description": "SOFTWARE até 1.000,00: NIVEL_1 → ADMIN."
+    },
+    {
+      "_id": "req_rules_admin_submete",
+      "_type": "request",
+      "parentId": "fld_rules",
+      "metaSortKey": 13,
+      "name": "ADMIN submete → 200",
+      "method": "POST",
+      "url": "{{ _.base_url }}/requests/{{ _.request_id }}/submit",
+      "headers": [
+        {
+          "name": "Content-Type",
+          "value": "application/json"
+        }
+      ],
+      "authentication": {
+        "type": "bearer",
+        "token": "{{ _.token_admin }}"
+      },
+      "body": {
+        "mimeType": "application/json",
+        "text": "{\n  \"lockVersion\": {{ _.lock_version }}\n}"
+      },
+      "afterResponseScript": "let body;\ntry { body = insomnia.response.json(); } catch (e) { body = null; }\nif (body && body.id !== undefined && body.lockVersion !== undefined) {\n  insomnia.baseEnvironment.set('request_id', body.id);\n  insomnia.baseEnvironment.set('lock_version', body.lockVersion);\n}",
+      "description": ""
+    },
+    {
+      "_id": "req_rules_auto_n1",
+      "_type": "request",
+      "parentId": "fld_rules",
+      "metaSortKey": 14,
+      "name": "ADMIN aprova a própria (NIVEL_1) → 422",
+      "method": "POST",
+      "url": "{{ _.base_url }}/requests/{{ _.request_id }}/approve",
+      "headers": [
+        {
+          "name": "Content-Type",
+          "value": "application/json"
+        }
+      ],
+      "authentication": {
+        "type": "bearer",
+        "token": "{{ _.token_admin }}"
+      },
+      "body": {
+        "mimeType": "application/json",
+        "text": "{\n  \"lockVersion\": {{ _.lock_version }}\n}"
+      },
+      "description": "Segregação de funções. Esperado: 422 SELF_APPROVAL_FORBIDDEN."
+    },
+    {
+      "_id": "req_rules_n1_aprova",
+      "_type": "request",
+      "parentId": "fld_rules",
+      "metaSortKey": 15,
+      "name": "Aprovador N1 TI aprova NIVEL_1 → 200",
+      "method": "POST",
+      "url": "{{ _.base_url }}/requests/{{ _.request_id }}/approve",
+      "headers": [
+        {
+          "name": "Content-Type",
+          "value": "application/json"
+        }
+      ],
+      "authentication": {
+        "type": "bearer",
+        "token": "{{ _.token_aprovador1_ti }}"
+      },
+      "body": {
+        "mimeType": "application/json",
+        "text": "{\n  \"lockVersion\": {{ _.lock_version }}\n}"
+      },
+      "afterResponseScript": "let body;\ntry { body = insomnia.response.json(); } catch (e) { body = null; }\nif (body && body.id !== undefined && body.lockVersion !== undefined) {\n  insomnia.baseEnvironment.set('request_id', body.id);\n  insomnia.baseEnvironment.set('lock_version', body.lockVersion);\n}",
+      "description": ""
+    },
+    {
+      "_id": "req_rules_auto_admin",
+      "_type": "request",
+      "parentId": "fld_rules",
+      "metaSortKey": 16,
+      "name": "ADMIN aprova a própria (etapa ADMIN) → 422",
+      "method": "POST",
+      "url": "{{ _.base_url }}/requests/{{ _.request_id }}/approve",
+      "headers": [
+        {
+          "name": "Content-Type",
+          "value": "application/json"
+        }
+      ],
+      "authentication": {
+        "type": "bearer",
+        "token": "{{ _.token_admin }}"
+      },
+      "body": {
+        "mimeType": "application/json",
+        "text": "{\n  \"lockVersion\": {{ _.lock_version }}\n}"
+      },
+      "description": "Esperado: 422 SELF_APPROVAL_FORBIDDEN; a etapa ADMIN fica para outro ADMIN."
+    },
+    {
+      "_id": "req_rules_admin2_aprova",
+      "_type": "request",
+      "parentId": "fld_rules",
+      "metaSortKey": 17,
+      "name": "Outro ADMIN aprova a etapa ADMIN → 200 APPROVED",
+      "method": "POST",
+      "url": "{{ _.base_url }}/requests/{{ _.request_id }}/approve",
+      "headers": [
+        {
+          "name": "Content-Type",
+          "value": "application/json"
+        }
+      ],
+      "authentication": {
+        "type": "bearer",
+        "token": "{{ _.token_admin2 }}"
+      },
+      "body": {
+        "mimeType": "application/json",
+        "text": "{\n  \"lockVersion\": {{ _.lock_version }},\n  \"comment\": \"Conferido pelo segundo administrador.\"\n}"
+      },
+      "afterResponseScript": "let body;\ntry { body = insomnia.response.json(); } catch (e) { body = null; }\nif (body && body.id !== undefined && body.lockVersion !== undefined) {\n  insomnia.baseEnvironment.set('request_id', body.id);\n  insomnia.baseEnvironment.set('lock_version', body.lockVersion);\n}",
+      "description": "Esperado: 200 com status APPROVED."
+    },
+    {
+      "_id": "fld_concurrency",
+      "_type": "request_group",
+      "parentId": "wrk_purchase",
+      "name": "16 Concorrência (lockVersion → 409)",
+      "description": "Rode de cima para baixo. Toda alteração exige o lockVersion lido no detalhe; um valor desatualizado responde 409 CONCURRENT_MODIFICATION sem alterar nada. Para a corrida real entre dois aprovadores, dispare os dois approve do mesmo lockVersion ao mesmo tempo: um passa, o outro recebe 409.",
+      "metaSortKey": 16
+    },
+    {
+      "_id": "req_conc_criar",
+      "_type": "request",
+      "parentId": "fld_concurrency",
+      "metaSortKey": 1,
+      "name": "Criar rascunho → 201",
+      "method": "POST",
+      "url": "{{ _.base_url }}/requests",
+      "headers": [
+        {
+          "name": "Content-Type",
+          "value": "application/json"
+        }
+      ],
+      "authentication": {
+        "type": "bearer",
+        "token": "{{ _.token_solicitante_ti }}"
+      },
+      "body": {
+        "mimeType": "application/json",
+        "text": "{\n  \"title\": \"Projetor\",\n  \"description\": \"Projetor para a sala de treinamento.\",\n  \"category\": \"EQUIPMENT\",\n  \"neededBy\": \"2030-12-31\",\n  \"items\": [\n    { \"description\": \"Projetor Full HD\", \"quantity\": 1, \"unitPrice\": \"3200.00\" }\n  ]\n}"
+      },
+      "afterResponseScript": "let body;\ntry { body = insomnia.response.json(); } catch (e) { body = null; }\nif (body && body.id !== undefined && body.lockVersion !== undefined) {\n  insomnia.baseEnvironment.set('request_id', body.id);\n  insomnia.baseEnvironment.set('lock_version', body.lockVersion);\n}",
+      "description": ""
+    },
+    {
+      "_id": "req_conc_guardar",
+      "_type": "request",
+      "parentId": "fld_concurrency",
+      "metaSortKey": 2,
+      "name": "Detalhe (guarda o lockVersion como \"antigo\") → 200",
+      "method": "GET",
+      "url": "{{ _.base_url }}/requests/{{ _.request_id }}",
+      "headers": [],
+      "authentication": {
+        "type": "bearer",
+        "token": "{{ _.token_solicitante_ti }}"
+      },
+      "body": {},
+      "afterResponseScript": "let body;\ntry { body = insomnia.response.json(); } catch (e) { body = null; }\nif (body && body.id !== undefined && body.lockVersion !== undefined) {\n  insomnia.baseEnvironment.set('request_id', body.id);\n  insomnia.baseEnvironment.set('lock_version', body.lockVersion);\n  insomnia.baseEnvironment.set('lock_version_antigo', body.lockVersion);\n}",
+      "description": "Simula uma segunda aba aberta: grava o lockVersion atual também em lock_version_antigo."
+    },
+    {
+      "_id": "req_conc_editar",
+      "_type": "request",
+      "parentId": "fld_concurrency",
+      "metaSortKey": 3,
+      "name": "Editar com o lockVersion atual → 200",
+      "method": "PUT",
+      "url": "{{ _.base_url }}/requests/{{ _.request_id }}",
+      "headers": [
+        {
+          "name": "Content-Type",
+          "value": "application/json"
+        }
+      ],
+      "authentication": {
+        "type": "bearer",
+        "token": "{{ _.token_solicitante_ti }}"
+      },
+      "body": {
+        "mimeType": "application/json",
+        "text": "{\n  \"title\": \"Projetor e tela\",\n  \"description\": \"Projetor e tela para a sala de treinamento.\",\n  \"category\": \"EQUIPMENT\",\n  \"neededBy\": \"2030-12-31\",\n  \"items\": [\n    { \"description\": \"Projetor Full HD\", \"quantity\": 1, \"unitPrice\": \"3200.00\" },\n    { \"description\": \"Tela retrátil\", \"quantity\": 1, \"unitPrice\": \"600.00\" }\n  ],\n  \"lockVersion\": {{ _.lock_version }}\n}"
+      },
+      "afterResponseScript": "let body;\ntry { body = insomnia.response.json(); } catch (e) { body = null; }\nif (body && body.id !== undefined && body.lockVersion !== undefined) {\n  insomnia.baseEnvironment.set('request_id', body.id);\n  insomnia.baseEnvironment.set('lock_version', body.lockVersion);\n}",
+      "description": "Esperado: 200 com lockVersion maior que lock_version_antigo."
+    },
+    {
+      "_id": "req_conc_editar_antigo",
+      "_type": "request",
+      "parentId": "fld_concurrency",
+      "metaSortKey": 4,
+      "name": "Editar com o lockVersion antigo → 409",
+      "method": "PUT",
+      "url": "{{ _.base_url }}/requests/{{ _.request_id }}",
+      "headers": [
+        {
+          "name": "Content-Type",
+          "value": "application/json"
+        }
+      ],
+      "authentication": {
+        "type": "bearer",
+        "token": "{{ _.token_solicitante_ti }}"
+      },
+      "body": {
+        "mimeType": "application/json",
+        "text": "{\n  \"title\": \"Só o projetor\",\n  \"description\": \"Edição feita na aba desatualizada.\",\n  \"category\": \"EQUIPMENT\",\n  \"neededBy\": \"2030-12-31\",\n  \"items\": [\n    { \"description\": \"Projetor Full HD\", \"quantity\": 1, \"unitPrice\": \"3200.00\" }\n  ],\n  \"lockVersion\": {{ _.lock_version_antigo }}\n}"
+      },
+      "description": "Esperado: 409 CONCURRENT_MODIFICATION; o título continua \"Projetor e tela\"."
+    },
+    {
+      "_id": "req_conc_submeter_antigo",
+      "_type": "request",
+      "parentId": "fld_concurrency",
+      "metaSortKey": 5,
+      "name": "Submeter com o lockVersion antigo → 409",
+      "method": "POST",
+      "url": "{{ _.base_url }}/requests/{{ _.request_id }}/submit",
+      "headers": [
+        {
+          "name": "Content-Type",
+          "value": "application/json"
+        }
+      ],
+      "authentication": {
+        "type": "bearer",
+        "token": "{{ _.token_solicitante_ti }}"
+      },
+      "body": {
+        "mimeType": "application/json",
+        "text": "{\n  \"lockVersion\": {{ _.lock_version_antigo }}\n}"
+      },
+      "description": "Esperado: 409 CONCURRENT_MODIFICATION; continua DRAFT."
+    },
+    {
+      "_id": "req_conc_submeter",
+      "_type": "request",
+      "parentId": "fld_concurrency",
+      "metaSortKey": 6,
+      "name": "Submeter com o lockVersion atual → 200",
+      "method": "POST",
+      "url": "{{ _.base_url }}/requests/{{ _.request_id }}/submit",
+      "headers": [
+        {
+          "name": "Content-Type",
+          "value": "application/json"
+        }
+      ],
+      "authentication": {
+        "type": "bearer",
+        "token": "{{ _.token_solicitante_ti }}"
+      },
+      "body": {
+        "mimeType": "application/json",
+        "text": "{\n  \"lockVersion\": {{ _.lock_version }}\n}"
+      },
+      "afterResponseScript": "let body;\ntry { body = insomnia.response.json(); } catch (e) { body = null; }\nif (body && body.id !== undefined && body.lockVersion !== undefined) {\n  insomnia.baseEnvironment.set('request_id', body.id);\n  insomnia.baseEnvironment.set('lock_version', body.lockVersion);\n}",
+      "description": "Esperado: 200 PENDING_APPROVAL."
+    },
+    {
+      "_id": "req_conc_sem_lock",
+      "_type": "request",
+      "parentId": "fld_concurrency",
+      "metaSortKey": 7,
+      "name": "Ação sem lockVersion → 400",
+      "method": "POST",
+      "url": "{{ _.base_url }}/requests/{{ _.request_id }}/approve",
+      "headers": [
+        {
+          "name": "Content-Type",
+          "value": "application/json"
+        }
+      ],
+      "authentication": {
+        "type": "bearer",
+        "token": "{{ _.token_aprovador1_ti }}"
+      },
+      "body": {
+        "mimeType": "application/json",
+        "text": "{\n  \"comment\": \"Sem lockVersion.\"\n}"
+      },
+      "description": "Esperado: 400 VALIDATION_FAILED com errors[].field = lockVersion."
+    },
+    {
+      "_id": "fld_inbox",
+      "_type": "request_group",
+      "parentId": "wrk_purchase",
+      "name": "17 Caixa de aprovação (GET /approvals/inbox)",
+      "description": "Solicitações cuja etapa atual o usuário pode decidir agora (mesma ActionPolicy do approve). Aberta a qualquer papel: para quem não pode aprovar nada a lista vem vazia, não 403. Valores abaixo são de um banco recém-semeado.",
+      "metaSortKey": 17
+    },
+    {
+      "_id": "req_inbox_n1_ti",
+      "_type": "request",
+      "parentId": "fld_inbox",
+      "metaSortKey": 1,
+      "name": "Aprovador N1 TI → 200",
+      "method": "GET",
+      "url": "{{ _.base_url }}/approvals/inbox",
+      "headers": [],
+      "authentication": {
+        "type": "bearer",
+        "token": "{{ _.token_aprovador1_ti }}"
+      },
+      "body": {},
+      "description": "Esperado: \"Licenças de IDE\" e \"Ferramenta de monitoramento\" (v2), ambas na etapa NIVEL_1. \"Notebooks\" não aparece: está no NIVEL_2."
+    },
+    {
+      "_id": "req_inbox_n2_ti",
+      "_type": "request",
+      "parentId": "fld_inbox",
+      "metaSortKey": 2,
+      "name": "Aprovador N2 TI → 200",
+      "method": "GET",
+      "url": "{{ _.base_url }}/approvals/inbox",
+      "headers": [],
+      "authentication": {
+        "type": "bearer",
+        "token": "{{ _.token_aprovador2_ti }}"
+      },
+      "body": {},
+      "description": "Esperado: \"Notebooks\" (NIVEL_2) e também as do NIVEL_1, que um NIVEL_2 pode decidir."
+    },
+    {
+      "_id": "req_inbox_n1_mnt",
+      "_type": "request",
+      "parentId": "fld_inbox",
+      "metaSortKey": 3,
+      "name": "Aprovador N1 MNT → 200",
+      "method": "GET",
+      "url": "{{ _.base_url }}/approvals/inbox",
+      "headers": [],
+      "authentication": {
+        "type": "bearer",
+        "token": "{{ _.token_aprovador1_mnt }}"
+      },
+      "body": {},
+      "description": "Esperado: \"EPIs para a equipe de manutenção\" (NIVEL_1). Nada do CC-TI-01."
+    },
+    {
+      "_id": "req_inbox_n2_mnt",
+      "_type": "request",
+      "parentId": "fld_inbox",
+      "metaSortKey": 4,
+      "name": "Aprovador N2 MNT → 200",
+      "method": "GET",
+      "url": "{{ _.base_url }}/approvals/inbox",
+      "headers": [],
+      "authentication": {
+        "type": "bearer",
+        "token": "{{ _.token_aprovador2_mnt }}"
+      },
+      "body": {},
+      "description": "Esperado: \"Kit de ferramentas para a oficina\" (NIVEL_2) e \"EPIs\" (NIVEL_1). O orçamento não filtra a caixa: aprovar o kit dá BUDGET_EXCEEDED."
+    },
+    {
+      "_id": "req_inbox_admin",
+      "_type": "request",
+      "parentId": "fld_inbox",
+      "metaSortKey": 5,
+      "name": "Admin → 200",
+      "method": "GET",
+      "url": "{{ _.base_url }}/approvals/inbox",
+      "headers": [],
+      "authentication": {
+        "type": "bearer",
+        "token": "{{ _.token_admin }}"
+      },
+      "body": {},
+      "description": "ADMIN decide qualquer etapa, menos as das próprias solicitações: todas as pendentes de outros donos."
+    },
+    {
+      "_id": "req_inbox_solicitante",
+      "_type": "request",
+      "parentId": "fld_inbox",
+      "metaSortKey": 6,
+      "name": "Solicitante → 200 com lista vazia",
+      "method": "GET",
+      "url": "{{ _.base_url }}/approvals/inbox",
+      "headers": [],
+      "authentication": {
+        "type": "bearer",
+        "token": "{{ _.token_solicitante_ti }}"
+      },
+      "body": {},
+      "description": "Esperado: 200 com []."
+    },
+    {
+      "_id": "req_inbox_sem_token",
+      "_type": "request",
+      "parentId": "fld_inbox",
+      "metaSortKey": 7,
+      "name": "Sem token → 401",
+      "method": "GET",
+      "url": "{{ _.base_url }}/approvals/inbox",
+      "headers": [],
+      "authentication": {},
+      "body": {},
+      "description": "Esperado: 401 UNAUTHORIZED."
+    },
+    {
+      "_id": "fld_history",
+      "_type": "request_group",
+      "parentId": "wrk_purchase",
+      "name": "18 Histórico e versões (dados do seed)",
+      "description": "Mesma visibilidade do detalhe (404 fora dela). Eventos criados pelo seed têm requestId \"seed\"; os criados pela API, o X-Request-Id da chamada.",
+      "metaSortKey": 18
+    },
+    {
+      "_id": "req_hist_monitoramento",
+      "_type": "request",
+      "parentId": "fld_history",
+      "metaSortKey": 1,
+      "name": "Histórico de \"Ferramenta de monitoramento\" → 200",
+      "method": "GET",
+      "url": "{{ _.base_url }}/requests/{{ _.seed_req_monitoramento }}/history",
+      "headers": [],
+      "authentication": {
+        "type": "bearer",
+        "token": "{{ _.token_aprovador1_ti }}"
+      },
+      "body": {},
+      "description": "Esperado: CREATE, SUBMIT, REQUEST_CHANGES (version 1, com o comentário), EDIT e SUBMIT (version 2), todos com requestId \"seed\". Se a pasta 15 já rodou, há também um APPROVE (version 2) com o X-Request-Id daquela chamada."
+    },
+    {
+      "_id": "req_hist_versoes",
+      "_type": "request",
+      "parentId": "fld_history",
+      "metaSortKey": 2,
+      "name": "Versões de \"Ferramenta de monitoramento\" → 200",
+      "method": "GET",
+      "url": "{{ _.base_url }}/requests/{{ _.seed_req_monitoramento }}/versions",
+      "headers": [],
+      "authentication": {
+        "type": "bearer",
+        "token": "{{ _.token_aprovador1_ti }}"
+      },
+      "body": {},
+      "description": "Esperado: versões 1 e 2."
+    },
+    {
+      "_id": "req_hist_v1",
+      "_type": "request",
+      "parentId": "fld_history",
+      "metaSortKey": 3,
+      "name": "Versão 1 de \"Ferramenta de monitoramento\" → 200",
+      "method": "GET",
+      "url": "{{ _.base_url }}/requests/{{ _.seed_req_monitoramento }}/versions/1",
+      "headers": [],
+      "authentication": {
+        "type": "bearer",
+        "token": "{{ _.token_aprovador1_ti }}"
+      },
+      "body": {},
+      "description": "Esperado: 12 × 350,00 (total \"4200.00\"), a versão original devolvida."
+    },
+    {
+      "_id": "req_hist_v2",
+      "_type": "request",
+      "parentId": "fld_history",
+      "metaSortKey": 4,
+      "name": "Versão 2 de \"Ferramenta de monitoramento\" → 200",
+      "method": "GET",
+      "url": "{{ _.base_url }}/requests/{{ _.seed_req_monitoramento }}/versions/2",
+      "headers": [],
+      "authentication": {
+        "type": "bearer",
+        "token": "{{ _.token_aprovador1_ti }}"
+      },
+      "body": {},
+      "description": "Esperado: plano anual, 1 × 3.600,00."
+    },
+    {
+      "_id": "req_hist_rascunho_dono",
+      "_type": "request",
+      "parentId": "fld_history",
+      "metaSortKey": 5,
+      "name": "Histórico de rascunho (dono) → 200",
+      "method": "GET",
+      "url": "{{ _.base_url }}/requests/{{ _.seed_req_rascunho }}/history",
+      "headers": [],
+      "authentication": {
+        "type": "bearer",
+        "token": "{{ _.token_solicitante_ti }}"
+      },
+      "body": {},
+      "description": "Seed: \"Monitores para a sala de reuniões\". Esperado: só o evento CREATE."
+    },
+    {
+      "_id": "req_hist_rascunho_outro",
+      "_type": "request",
+      "parentId": "fld_history",
+      "metaSortKey": 6,
+      "name": "Histórico de rascunho alheio → 404",
+      "method": "GET",
+      "url": "{{ _.base_url }}/requests/{{ _.seed_req_rascunho }}/history",
+      "headers": [],
+      "authentication": {
+        "type": "bearer",
+        "token": "{{ _.token_aprovador1_ti }}"
+      },
+      "body": {},
+      "description": "Esperado: 404 NOT_FOUND."
+    },
+    {
+      "_id": "req_hist_inexistente",
+      "_type": "request",
+      "parentId": "fld_history",
+      "metaSortKey": 7,
+      "name": "Histórico de solicitação inexistente → 404",
+      "method": "GET",
+      "url": "{{ _.base_url }}/requests/999999/history",
+      "headers": [],
+      "authentication": {
+        "type": "bearer",
+        "token": "{{ _.token_admin }}"
+      },
+      "body": {},
+      "description": "Esperado: 404 NOT_FOUND."
+    },
+    {
+      "_id": "fld_dashboard",
+      "_type": "request_group",
+      "parentId": "wrk_purchase",
+      "name": "19 Dashboard (GET /dashboard/summary)",
+      "description": "Resposta { month, requestsByStatus, totalRequests, budgets[] }. month é a competência atual; requestsByStatus traz todos os status (zero quando não há); totais na mesma visibilidade da listagem. budgets: o CC do usuário, ou todos para ADMIN.",
+      "metaSortKey": 19
+    },
+    {
+      "_id": "req_dash_solicitante",
+      "_type": "request",
+      "parentId": "fld_dashboard",
+      "metaSortKey": 1,
+      "name": "Dashboard da Solicitante TI → 200",
+      "method": "GET",
+      "url": "{{ _.base_url }}/dashboard/summary",
+      "headers": [],
+      "authentication": {
+        "type": "bearer",
+        "token": "{{ _.token_solicitante_ti }}"
+      },
+      "body": {},
+      "description": "Esperado: totais só das solicitações dela e budgets com o CC-TI-01."
+    },
+    {
+      "_id": "req_dash_aprovador_mnt",
+      "_type": "request",
+      "parentId": "fld_dashboard",
+      "metaSortKey": 2,
+      "name": "Dashboard do Aprovador N1 MNT → 200",
+      "method": "GET",
+      "url": "{{ _.base_url }}/dashboard/summary",
+      "headers": [],
+      "authentication": {
+        "type": "bearer",
+        "token": "{{ _.token_aprovador1_mnt }}"
+      },
+      "body": {},
+      "description": "Esperado: totais do CC-MNT-01 (sem rascunhos alheios) e budgets com o CC-MNT-01 (available \"800.00\" no seed)."
+    },
+    {
+      "_id": "req_dash_admin",
+      "_type": "request",
+      "parentId": "fld_dashboard",
+      "metaSortKey": 3,
+      "name": "Dashboard do Admin → 200",
+      "method": "GET",
+      "url": "{{ _.base_url }}/dashboard/summary",
+      "headers": [],
+      "authentication": {
+        "type": "bearer",
+        "token": "{{ _.token_admin }}"
+      },
+      "body": {},
+      "description": "Esperado: totais de todos os centros de custo e budgets de todos os CCs, inclusive os sem orçamento no mês (valores \"0.00\")."
+    },
+    {
+      "_id": "req_dash_sem_token",
+      "_type": "request",
+      "parentId": "fld_dashboard",
+      "metaSortKey": 4,
+      "name": "Sem token → 401",
+      "method": "GET",
+      "url": "{{ _.base_url }}/dashboard/summary",
+      "headers": [],
+      "authentication": {},
+      "body": {},
+      "description": "Esperado: 401 UNAUTHORIZED."
     }
   ]
 }

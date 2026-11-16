@@ -833,3 +833,38 @@ One block per agent turn, one row per changed file:
 | `frontend/src/app/features/requests/requests.service.ts` | modified | +41 | -0 |
 | `frontend/src/app/features/requests/route-id.ts` | created | +5 | -0 |
 | `frontend/src/app/shared/components/comment-dialog.ts` | created | +128 | -0 |
+
+---
+### Turn 2026-11-16 18:52:45 -0300 · ClaudeCode
+- **Source**: hook
+- **Session**: 236c317d-3874-4b16-8bb6-95ec42925d67
+- **Prompt**: Atualize a collection do Insomnia em backend/insomnia/ com todos os endpoints do back-end (E12 a E23), mantendo o base_url como variável, o token preenchido via response chaining do login e um request de login para cada usuário do seed. Não inclua tokens fixos.
+- **Summary**: n/a
+- **Note**: previous turn ended without a record/Stop event (interrupted?); rows may include manual edits made before the next prompt
+
+| File | Change | Additions | Removals |
+|---|---|---|---|
+| `docs/api/insomnia-collection.json` | modified | +3438 | -282 |
+
+---
+### Turn 2026-11-16 18:54:55 -0300 · ClaudeCode
+- **Source**: hook
+- **Session**: 236c317d-3874-4b16-8bb6-95ec42925d67
+- **Prompt**: <task-noti***> <task-id>bq4pfat09</task-id> <tool-use-id>toolu_01KgjDYqb1C36rE3areahLKC</tool-use-id> <output-file>C:\Users\yagor\AppData\Local\Temp\claude\2bd65ad35875c96b\236c317d-3874-4b16-8bb6-95ec42925d67\tasks\bq4pfat09.output</output-file> <status>failed</status> <summary>Background command "Sobe o back temporário com seed na porta 8099" failed with exit code 1</summary> </task-noti***>
+- **Summary**: n/a
+- **Note**: previous turn ended without a record/Stop event (interrupted?); rows may include manual edits made before the next prompt
+
+| File | Change | Additions | Removals |
+|---|---|---|---|
+| `docs/api/insomnia-collection.json` | modified | +1 | -1 |
+### Turn 2026-11-16 18:55:47 -0300 · ClaudeCode
+- **Source**: manual
+- **Session**: 236c317d-3874-4b16-8bb6-95ec42925d67
+- **Prompt**: Update the Insomnia collection with all backend endpoints (E12 to E23), base_url as a variable, token filled by login chaining, one login per seed user, no fixed tokens.
+- **Summary**: Rewrote docs/api/insomnia-collection.json (19 folders, 166 requests) covering every backend route, with logins for the 8 seed users and tokens/ids/lockVersion chained by after-response scripts; no fixed tokens
+- **Note**: summary-only entry; the file changes are the rows of the hook entries at 2026-11-16 18:52:45 and 18:54:55 above (their turns were closed by background task notifications before record ran)
+
+| File | Change | Additions | Removals |
+|---|---|---|---|
+
+---
