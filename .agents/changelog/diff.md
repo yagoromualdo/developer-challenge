@@ -913,3 +913,14 @@ One block per agent turn, one row per changed file:
 |---|---|---|---|
 | `.github/workflows/ci.yml` | modified | +97 | -0 |
 | `frontend/angular.json` | modified | +1 | -3 |
+
+---
+### Turn 2026-11-16 20:40:37 -0300 · ClaudeCode
+- **Source**: command
+- **Session**: 56e43fdf-96f5-4db7-87d3-a5af58e78e89
+- **Prompt**: Sim, atualize
+- **Summary**: Bump CI actions to Node 24 versions (checkout/setup-node/setup-java v5) and pin runners to ubuntu-24.04
+
+| File | Change | Additions | Removals |
+|---|---|---|---|
+| `.github/workflows/ci.yml` | modified | +8 | -8 |
