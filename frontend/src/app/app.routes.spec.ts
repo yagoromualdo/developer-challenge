@@ -40,7 +40,11 @@ describe('routes, session and role menu', () => {
     harness = await RouterTestingHarness.create();
   }
 
-  afterEach(() => httpTesting.verify());
+  // Estes testes só olham navegação; a carga do dashboard (rota padrão) tem spec própria.
+  afterEach(() => {
+    httpTesting.match('/api/dashboard/summary');
+    httpTesting.verify();
+  });
 
   // Não espera a navegação: ela fica pendente até o teste responder o /auth/me.
   function startNavigation(url: string): void {

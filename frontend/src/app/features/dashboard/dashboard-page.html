@@ -1,0 +1,110 @@
+<header class="page-header">
+  <div>
+    <h1>Dashboard</h1>
+    @if (monthLabel(); as month) {
+      <p class="subtitle">Competência: {{ month }}</p>
+    }
+  </div>
+  <button
+    mat-stroked-button
+    type="button"
+    (click)="load()"
+    [disabled]="state().status === 'loading'"
+  >
+    Atualizar
+  </button>
+</header>
+
+@switch (state().status) {
+  @case ('loading') {
+    <div class="loading" role="status">
+      <mat-progress-bar mode="indeterminate" aria-label="Carregando o dashboard" />
+      <p>Carregando o dashboard…</p>
+    </div>
+  }
+  @case ('error') {
+    <app-problem-alert [error]="error()" fallback="Não foi possível carregar o dashboard.">
+      <button mat-button type="button" class="retry" (click)="load()">Tentar novamente</button>
+    </app-problem-alert>
+  }
+  @case ('ready') {
+    <section class="section" aria-labelledby="status-heading">
+      <div class="section-header">
+        <h2 id="status-heading">Solicitações por status</h2>
+        <span class="total" data-testid="total-requests">Total: {{ totalRequests() }}</span>
+      </div>
+
+      @if (totalRequests() === 0) {
+        <div class="empty" data-testid="requests-empty">
+          <p>Nenhuma solicitação encontrada.</p>
+          <a mat-flat-button routerLink="/requests/new">Nova solicitação</a>
+        </div>
+      } @else {
+        <ul class="status-grid">
+          @for (card of statusCards(); track card.status) {
+            <li>
+              <a
+                class="status-card"
+                routerLink="/requests"
+                [queryParams]="{ status: card.status }"
+                [attr.data-status]="card.status"
+                [attr.aria-label]="card.label + ': ' + card.count + '. Ver na listagem'"
+              >
+                <span class="count">{{ card.count }}</span>
+                <span class="label">{{ card.label }}</span>
+              </a>
+            </li>
+          }
+        </ul>
+      }
+    </section>
+
+    <section class="section" aria-labelledby="budget-heading">
+      <div class="section-header">
+        <h2 id="budget-heading">Orçamento do mês por centro de custo</h2>
+      </div>
+
+      @for (budget of budgets(); track budget.costCenterId) {
+        <mat-card
+          appearance="outlined"
+          class="budget"
+          [attr.data-cost-center]="budget.costCenterId"
+        >
+          <mat-card-header>
+            <mat-card-title
+              >{{ budget.costCenterCode }} · {{ budget.costCenterName }}</mat-card-title
+            >
+          </mat-card-header>
+          <mat-card-content>
+            <dl class="figures">
+              <div>
+                <dt>Orçado</dt>
+                <dd data-testid="amount">{{ budget.amount | money }}</dd>
+              </div>
+              <div>
+                <dt>Consumido</dt>
+                <dd data-testid="consumed">{{ budget.consumed | money }}</dd>
+              </div>
+              <div>
+                <dt>Disponível</dt>
+                <dd data-testid="available">{{ budget.available | money }}</dd>
+              </div>
+            </dl>
+            @if (budget.consumedPercent !== null) {
+              <mat-progress-bar
+                mode="determinate"
+                [value]="budget.consumedPercent"
+                [attr.aria-label]="'Consumido ' + budget.consumedPercent + '% do orçamento'"
+              />
+              <p class="percent">{{ budget.consumedPercent }}% consumido</p>
+            } @else {
+              <p class="percent">Sem orçamento definido para o mês.</p>
+            }
+          </mat-card-content>
+        </mat-card>
+      } @empty {
+        <p class="empty" data-testid="budgets-empty">Nenhum centro de custo no seu escopo.</p>
+      }
+    </section>
+  }
+}
