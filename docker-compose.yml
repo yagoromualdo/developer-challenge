@@ -22,5 +22,30 @@ services:
       retries: 10
       start_period: 10s
 
+  backend:
+    build: ./backend
+    restart: unless-stopped
+    depends_on:
+      db:
+        condition: service_healthy
+    environment:
+      # Migrations (Flyway) rodam na subida; o seed só popula o banco se ainda não houver usuários
+      DB_URL: jdbc:postgresql://db:5432/${POSTGRES_DB:-purchase}
+      DB_USER: ${POSTGRES_USER:-purchase}
+      DB_PASSWORD: ${POSTGRES_PASSWORD:-purchase}
+      JWT_SECRET: ${JWT_SECRET:-dev-only-insecure-jwt-secret-change-me-0123456789}
+      JWT_TTL_MINUTES: ${JWT_TTL_MINUTES:-15}
+      SEED_ENABLED: ${SEED_ENABLED:-true}
+      SERVER_PORT: 8080
+      TZ: UTC
+    ports:
+      - "${BACKEND_HOST_PORT:-8080}:8080"
+    healthcheck:
+      test: ["CMD-SHELL", "curl -fsS http://localhost:8080/health || exit 1"]
+      interval: 10s
+      timeout: 5s
+      retries: 5
+      start_period: 60s
+
 volumes:
   db-data:

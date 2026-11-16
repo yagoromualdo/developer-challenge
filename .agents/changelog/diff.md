@@ -648,3 +648,17 @@ One block per agent turn, one row per changed file:
 | `backend/src/main/java/com/kingspan/purchase/user/application/UserService.java` | modified | +5 | -0 |
 | `backend/src/main/resources/application.properties` | modified | +3 | -0 |
 | `backend/src/test/java/com/kingspan/purchase/seed/SeedIntegrationTest.java` | created | +145 | -0 |
+
+---
+### Turn 2026-11-15 23:46:27 -0300 · ClaudeCode
+- **Source**: command
+- **Session**: d9fa58e9-b7fb-45a9-bc69-c5a3983f1557
+- **Prompt**: Execute a etapa E23 do docs/plano-execucao.md. Use -DskipTests no build da imagem e configure o compose para que backend só suba depois do db saudável, com migrations e seed automáticos (SEED_ENABLED=true). Mostre o curl de login para eu testar.
+- **Summary**: E23: add multi-stage backend Dockerfile (non-root, -DskipTests, layered jar), .dockerignore and backend service in compose with db health dependency, healthcheck and seed enabled
+
+| File | Change | Additions | Removals |
+|---|---|---|---|
+| `.env.example` | modified | +4 | -1 |
+| `backend/.dockerignore` | created | +11 | -0 |
+| `backend/Dockerfile` | created | +35 | -0 |
+| `docker-compose.yml` | modified | +25 | -0 |
