@@ -29,7 +29,7 @@ class RequestStatusCountQueryImpl implements RequestStatusCountQuery {
         Expression<RequestStatus> status = root.get("status");
         Expression<Long> count = cb.count(root);
         Predicate predicate = spec.toPredicate(root, query, cb);
-        query.multiselect(status, count).groupBy(status);
+        query.select(cb.tuple(status, count)).groupBy(status);
         if (predicate != null) {
             query.where(predicate);
         }

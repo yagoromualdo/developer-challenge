@@ -21,6 +21,7 @@ import java.time.LocalDate;
 import java.util.Arrays;
 import java.util.List;
 import java.util.Map;
+import java.util.stream.IntStream;
 import org.junit.jupiter.api.AfterEach;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
@@ -114,7 +115,9 @@ class PurchaseRequestSubmitCancelIntegrationTest {
         assertThat(response.status()).as(response.body()).isEqualTo(200);
         List<String> levels = Arrays.asList(expectedLevels.split(","));
         assertThat(steps(response)).extracting(step -> step.get("level")).containsExactlyElementsOf(levels);
-        assertThat(steps(response)).extracting(step -> step.get("order")).containsExactly(orders(levels.size()));
+        assertThat(steps(response))
+                .extracting(step -> step.get("order"))
+                .containsExactlyElementsOf(orders(levels.size()));
         assertThat(steps(response))
                 .allSatisfy(step ->
                         assertThat(step).containsEntry("status", "PENDING").containsEntry("decidedBy", null));
@@ -394,12 +397,8 @@ class PurchaseRequestSubmitCancelIntegrationTest {
         return (List<Map<String, Object>>) response.json().get("steps");
     }
 
-    private static Integer[] orders(int size) {
-        Integer[] orders = new Integer[size];
-        for (int index = 0; index < size; index++) {
-            orders[index] = index + 1;
-        }
-        return orders;
+    private static List<Integer> orders(int size) {
+        return IntStream.rangeClosed(1, size).boxed().toList();
     }
 
     private static String lockVersionBody(long lockVersion) {

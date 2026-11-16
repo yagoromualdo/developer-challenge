@@ -924,3 +924,15 @@ One block per agent turn, one row per changed file:
 | File | Change | Additions | Removals |
 |---|---|---|---|
 | `.github/workflows/ci.yml` | modified | +8 | -8 |
+
+---
+### Turn 2026-11-16 20:49:43 -0300 · ClaudeCode
+- **Source**: hook
+- **Session**: 56e43fdf-96f5-4db7-87d3-a5af58e78e89
+- **Prompt**: Sim, corrija
+- **Summary**: n/a
+
+| File | Change | Additions | Removals |
+|---|---|---|---|
+| `backend/src/main/java/com/kingspan/purchase/request/infra/RequestStatusCountQueryImpl.java` | modified | +1 | -1 |
+| `backend/src/test/java/com/kingspan/purchase/request/web/PurchaseRequestSubmitCancelIntegrationTest.java` | modified | +4 | -7 |
