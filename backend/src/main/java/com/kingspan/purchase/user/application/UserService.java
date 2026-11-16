@@ -41,6 +41,11 @@ public class UserService {
         return users.findAll(Sort.by("id")).stream().map(UserAccount::from).toList();
     }
 
+    @Transactional(readOnly = true)
+    public boolean hasAnyUser() {
+        return users.count() > 0;
+    }
+
     @Transactional
     public UserAccount create(String name, String email, String password, UserProfile profile) {
         String normalizedEmail = normalizeEmail(email);

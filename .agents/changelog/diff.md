@@ -631,3 +631,20 @@ One block per agent turn, one row per changed file:
 | `backend/src/main/java/com/kingspan/purchase/request/infra/RequestStatusCountQuery.java` | created | +12 | -0 |
 | `backend/src/main/java/com/kingspan/purchase/request/infra/RequestStatusCountQueryImpl.java` | created | +42 | -0 |
 | `backend/src/test/java/com/kingspan/purchase/dashboard/web/DashboardIntegrationTest.java` | created | +253 | -0 |
+
+---
+### Turn 2026-11-15 17:34:56 -0300 · ClaudeCode
+- **Source**: hook
+- **Session**: 959ed88d-004f-4ba2-beb8-60ad91120a30
+- **Prompt**: Execute a etapa E22 do docs/plano-execucao.md. O seed deve criar os dados chamando os application services, ser idempotente e calcular o orçamento quase esgotado sempre para o mês corrente.
+- **Summary**: n/a
+
+| File | Change | Additions | Removals |
+|---|---|---|---|
+| `.env.example` | modified | +2 | -0 |
+| `backend/src/main/java/com/kingspan/purchase/seed/DemoDataSeeder.java` | created | +260 | -0 |
+| `backend/src/main/java/com/kingspan/purchase/seed/SeedRunner.java` | created | +51 | -0 |
+| `backend/src/main/java/com/kingspan/purchase/user/application/UserAccount.java` | modified | +1 | -1 |
+| `backend/src/main/java/com/kingspan/purchase/user/application/UserService.java` | modified | +5 | -0 |
+| `backend/src/main/resources/application.properties` | modified | +3 | -0 |
+| `backend/src/test/java/com/kingspan/purchase/seed/SeedIntegrationTest.java` | created | +145 | -0 |

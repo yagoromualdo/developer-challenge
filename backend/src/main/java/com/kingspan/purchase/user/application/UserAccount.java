@@ -19,7 +19,7 @@ public record UserAccount(
                 user.getCostCenterId());
     }
 
-    Actor toActor() {
+    public Actor toActor() {
         return new Actor(id, role, costCenterId, approverLevel);
     }
 }
