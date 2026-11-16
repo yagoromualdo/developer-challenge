@@ -1,3 +1,4 @@
+import { Role } from '../../core/auth/auth.models';
 import { Category } from '../../shared/request-category';
 import { RequestStatus } from '../../shared/request-status';
 
@@ -78,3 +79,52 @@ export interface CreateRequestPayload {
 export type UpdateRequestPayload = Omit<CreateRequestPayload, 'costCenterId'> & {
   lockVersion: number;
 };
+
+/** Item de `GET /requests/:id/versions`; `submittedAt` nulo é a versão de trabalho ainda em edição. */
+export interface RequestVersionSummary {
+  version: number;
+  current: boolean;
+  title: string;
+  category: Category;
+  total: string;
+  submittedAt: string | null;
+  competenceMonth: string | null;
+  createdAt: string;
+}
+
+/** `GET /requests/:id/versions/:n`: conteúdo e cadeia da versão, sem `allowedActions`. */
+export interface RequestVersion {
+  requestId: number;
+  version: number;
+  current: boolean;
+  title: string;
+  description: string;
+  category: Category;
+  neededBy: string | null;
+  total: string;
+  submittedAt: string | null;
+  competenceMonth: string | null;
+  createdAt: string;
+  items: RequestItem[];
+  steps: ApprovalStep[];
+}
+
+export type HistoryAction = 'CREATE' | RequestAction;
+
+/** Evento de `GET /requests/:id/history`; `requestId` é o `X-Request-Id` da chamada que o gerou. */
+export interface RequestEvent {
+  id: number;
+  version: number;
+  actorId: number;
+  actorRole: Role;
+  action: HistoryAction;
+  fromStatus: RequestStatus | null;
+  toStatus: RequestStatus;
+  stepLevel: ApprovalStep['level'] | null;
+  comment: string | null;
+  occurredAt: string;
+  requestId: string | null;
+}
+
+/** Ações que viram `POST /requests/:id/<rota>`; `EDIT` é navegação para o formulário. */
+export type TransitionAction = Exclude<RequestAction, 'EDIT'>;

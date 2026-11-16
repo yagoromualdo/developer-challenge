@@ -28,6 +28,8 @@ import {
   toCreatePayload,
   toUpdatePayload,
 } from './request-form';
+import { CONFLICT_MESSAGE } from './request-messages';
+import { parseRouteId } from './route-id';
 import { CostCenter, PurchaseRequestDetail } from './requests.models';
 import { RequestsService } from './requests.service';
 
@@ -37,8 +39,6 @@ interface LoadState {
   error: unknown;
 }
 
-const CONFLICT_MESSAGE =
-  'Esta solicitação foi alterada por outra pessoa. Os dados foram atualizados.';
 const KEY_REUSED_MESSAGE =
   'Este formulário já criou uma solicitação com outros dados (provavelmente num envio cuja resposta ' +
   'não chegou). Confira suas solicitações antes de tentar de novo; para criar outra, abra um novo formulário.';
@@ -71,7 +71,7 @@ export class RequestFormPage {
   /** Uma chave por instância do formulário: duplo clique e novas tentativas reaproveitam a mesma. */
   private readonly idempotencyKey = randomUuid();
 
-  private readonly requestId = parseId(this.route.snapshot.paramMap.get('id'));
+  private readonly requestId = parseRouteId(this.route.snapshot.paramMap.get('id'));
   protected readonly editing = this.route.snapshot.paramMap.has('id');
   protected readonly limits = REQUEST_LIMITS;
   protected readonly categoryOptions = CATEGORIES.map((value) => ({
@@ -230,9 +230,4 @@ export class RequestFormPage {
       error: (error: unknown) => this.load.set({ loading: false, detail: null, error }),
     });
   }
-}
-
-function parseId(raw: string | null): number | null {
-  const id = Number(raw);
-  return raw !== null && Number.isInteger(id) && id > 0 ? id : null;
 }

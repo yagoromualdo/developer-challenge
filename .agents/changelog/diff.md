@@ -811,3 +811,25 @@ One block per agent turn, one row per changed file:
 | `frontend/src/app/features/requests/request-form.ts` | created | +223 | -0 |
 | `frontend/src/app/features/requests/requests.models.ts` | modified | +55 | -0 |
 | `frontend/src/app/features/requests/requests.service.ts` | modified | +24 | -1 |
+
+---
+### Turn 2026-11-16 18:22:19 -0300 · ClaudeCode
+- **Source**: command
+- **Session**: ae0339ca-2dbd-46b7-b430-eecc72cd7313
+- **Prompt**: Execute a etapa E30 do docs/plano-execucao.md. Os botões vêm exclusivamente do allowedActions; depois de qualquer ação, recarregue o detalhe. Inclua os testes de allowedActions e de 409/422.
+- **Summary**: E30: request detail page with versions, approval chain, history and allowedActions-driven actions, comment dialog, 409/422 handling and tests
+
+| File | Change | Additions | Removals |
+|---|---|---|---|
+| `frontend/src/app/app.routes.ts` | modified | +2 | -2 |
+| `frontend/src/app/features/requests/request-detail-page.html` | created | +294 | -0 |
+| `frontend/src/app/features/requests/request-detail-page.scss` | created | +214 | -0 |
+| `frontend/src/app/features/requests/request-detail-page.spec.ts` | created | +424 | -0 |
+| `frontend/src/app/features/requests/request-detail-page.ts` | created | +365 | -0 |
+| `frontend/src/app/features/requests/request-form-page.ts` | modified | +3 | -8 |
+| `frontend/src/app/features/requests/request-labels.ts` | created | +24 | -0 |
+| `frontend/src/app/features/requests/request-messages.ts` | created | +3 | -0 |
+| `frontend/src/app/features/requests/requests.models.ts` | modified | +50 | -0 |
+| `frontend/src/app/features/requests/requests.service.ts` | modified | +41 | -0 |
+| `frontend/src/app/features/requests/route-id.ts` | created | +5 | -0 |
+| `frontend/src/app/shared/components/comment-dialog.ts` | created | +128 | -0 |

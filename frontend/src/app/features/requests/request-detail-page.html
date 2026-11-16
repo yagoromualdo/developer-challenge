@@ -1,0 +1,294 @@
+<header class="page-header">
+  <div>
+    <h1>{{ detail().data?.title ?? 'Solicitação' }}</h1>
+    @if (detail().data; as current) {
+      <p class="subtitle">
+        <app-status-badge [status]="current.status" />
+        <span>Solicitação #{{ current.id }} · versão {{ current.version }}</span>
+      </p>
+    }
+  </div>
+  <a mat-button routerLink="/requests">Voltar para a lista</a>
+</header>
+
+@if (detail().loading) {
+  <div class="loading" role="status">
+    <mat-progress-bar mode="indeterminate" aria-label="Carregando a solicitação" />
+    @if (!detail().data) {
+      <p>Carregando a solicitação…</p>
+    }
+  </div>
+}
+
+@if (detail().error; as error) {
+  <app-problem-alert [error]="error" fallback="Não foi possível carregar a solicitação.">
+    <button mat-button type="button" class="retry" (click)="reload()">Tentar novamente</button>
+  </app-problem-alert>
+}
+
+@if (detail().data; as current) {
+  <section class="actions-panel" aria-labelledby="actions-title">
+    <h2 id="actions-title" class="visually-hidden">Ações</h2>
+    @if (notice(); as message) {
+      <div class="info" role="status" data-testid="notice">{{ message }}</div>
+    }
+    @if (actionError(); as error) {
+      <app-problem-alert
+        [error]="error"
+        fallback="Não foi possível concluir a ação."
+        data-testid="action-error"
+      />
+    }
+    <div class="actions" data-testid="actions">
+      @for (button of actions(); track button.action) {
+        @if (button.action === 'EDIT') {
+          <a
+            mat-stroked-button
+            [routerLink]="['/requests', current.id, 'edit']"
+            [attr.data-action]="button.action"
+          >
+            {{ button.label }}
+          </a>
+        } @else if (button.appearance === 'flat') {
+          <button
+            mat-flat-button
+            type="button"
+            [attr.data-action]="button.action"
+            [disabled]="isBusy()"
+            (click)="run(button.action)"
+          >
+            {{ button.label }}
+          </button>
+        } @else {
+          <button
+            mat-stroked-button
+            type="button"
+            [attr.data-action]="button.action"
+            [disabled]="isBusy()"
+            (click)="run(button.action)"
+          >
+            {{ button.label }}
+          </button>
+        }
+      } @empty {
+        <p class="muted" data-testid="no-actions">Nenhuma ação disponível para você agora.</p>
+      }
+    </div>
+    @if (acting()) {
+      <mat-progress-bar mode="indeterminate" aria-label="Executando a ação" />
+    }
+  </section>
+
+  <section class="section" aria-labelledby="data-title">
+    <div class="section-header">
+      <h2 id="data-title">Dados</h2>
+      @if (selectedVersion() !== null) {
+        <button mat-button type="button" (click)="showCurrent()">Ver versão atual</button>
+      }
+    </div>
+
+    @if (selectedVersion() !== null) {
+      <div class="info" role="status" data-testid="previous-version">
+        Você está vendo a versão {{ selectedVersion() }}, que não é a atual. As ações valem para a
+        versão atual ({{ current.version }}).
+      </div>
+      @if (pickedVersion().loading) {
+        <mat-progress-bar mode="indeterminate" aria-label="Carregando a versão" />
+      }
+      @if (pickedVersion().error; as error) {
+        <app-problem-alert [error]="error" fallback="Não foi possível carregar a versão.">
+          <button mat-button type="button" class="retry" (click)="retryVersion()">
+            Tentar novamente
+          </button>
+        </app-problem-alert>
+      }
+    }
+
+    @if (shown(); as content) {
+      <dl class="facts" data-testid="content">
+        <div>
+          <dt>Versão</dt>
+          <dd>v{{ content.version }}{{ content.current ? ' (atual)' : '' }}</dd>
+        </div>
+        <div>
+          <dt>Categoria</dt>
+          <dd>{{ content.category }}</dd>
+        </div>
+        <div>
+          <dt>Centro de custo</dt>
+          <dd>{{ costCenterLabel() }}</dd>
+        </div>
+        <div>
+          <dt>Solicitante</dt>
+          <dd>{{ userLabel(current.ownerId) }}</dd>
+        </div>
+        <div>
+          <dt>Necessário até</dt>
+          <dd>{{ content.neededBy ? (content.neededBy | date: 'dd/MM/yyyy' : 'UTC') : '—' }}</dd>
+        </div>
+        <div>
+          <dt>Enviada em</dt>
+          <dd>
+            {{ content.submittedAt ? (content.submittedAt | date: 'dd/MM/yyyy HH:mm') : '—' }}
+          </dd>
+        </div>
+        <div>
+          <dt>Competência</dt>
+          <dd>{{ monthLabel(content.competenceMonth) }}</dd>
+        </div>
+        <div>
+          <dt>Total</dt>
+          <dd class="total" data-testid="total">{{ content.total | money }}</dd>
+        </div>
+      </dl>
+
+      @if (content.title !== current.title) {
+        <p><strong>Título nesta versão:</strong> {{ content.title }}</p>
+      }
+      <p class="description">{{ content.description }}</p>
+
+      <div class="table-wrapper">
+        <table class="items">
+          <caption class="visually-hidden">
+            Itens da versão
+            {{
+              content.version
+            }}
+          </caption>
+          <thead>
+            <tr>
+              <th scope="col">Descrição</th>
+              <th scope="col" class="number">Quantidade</th>
+              <th scope="col" class="number">Preço unitário</th>
+              <th scope="col" class="number">Subtotal</th>
+            </tr>
+          </thead>
+          <tbody>
+            @for (item of content.items; track $index) {
+              <tr>
+                <td>{{ item.description }}</td>
+                <td class="number">{{ item.quantity }}</td>
+                <td class="number">{{ item.unitPrice | money }}</td>
+                <td class="number">{{ item.subtotal | money }}</td>
+              </tr>
+            }
+          </tbody>
+        </table>
+      </div>
+
+      <h3>Cadeia de aprovação</h3>
+      @if (content.steps.length) {
+        <ol class="steps" data-testid="steps">
+          @for (step of content.steps; track step.order) {
+            <li class="step" [attr.data-status]="step.status">
+              <span class="step-title">
+                Etapa {{ step.order }} · {{ stepLevelLabels[step.level] }}
+              </span>
+              <span class="step-status">{{ stepStatusLabels[step.status] }}</span>
+              @if (step.decidedBy !== null) {
+                <span class="muted">
+                  por {{ userLabel(step.decidedBy) }}
+                  @if (step.decidedAt) {
+                    em {{ step.decidedAt | date: 'dd/MM/yyyy HH:mm' }}
+                  }
+                </span>
+              }
+              @if (step.comment) {
+                <q class="comment">{{ step.comment }}</q>
+              }
+            </li>
+          }
+        </ol>
+      } @else {
+        <p class="muted">A cadeia de aprovação é definida quando a solicitação é enviada.</p>
+      }
+    }
+  </section>
+
+  <section class="section" aria-labelledby="versions-title">
+    <h2 id="versions-title">Versões</h2>
+    @if (versions().loading && !versions().data) {
+      <mat-progress-bar mode="indeterminate" aria-label="Carregando as versões" />
+    }
+    @if (versions().error; as error) {
+      <app-problem-alert [error]="error" fallback="Não foi possível carregar as versões." />
+    }
+    @if (versions().data; as list) {
+      @if (list.length) {
+        <ul class="versions" data-testid="versions">
+          @for (version of list; track version.version) {
+            <li>
+              <button
+                mat-button
+                type="button"
+                [attr.aria-pressed]="
+                  selectedVersion() === null
+                    ? version.current
+                    : selectedVersion() === version.version
+                "
+                (click)="selectVersion(version)"
+              >
+                v{{ version.version }}{{ version.current ? ' (atual)' : '' }} ·
+                {{ version.total | money }}
+              </button>
+              <span class="muted">
+                @if (version.submittedAt) {
+                  enviada em {{ version.submittedAt | date: 'dd/MM/yyyy HH:mm' }}
+                } @else {
+                  em edição
+                }
+              </span>
+            </li>
+          }
+        </ul>
+      } @else {
+        <p class="muted">Nenhuma versão encontrada.</p>
+      }
+    }
+  </section>
+
+  <section class="section" aria-labelledby="history-title">
+    <h2 id="history-title">Histórico</h2>
+    @if (history().loading && !history().data) {
+      <mat-progress-bar mode="indeterminate" aria-label="Carregando o histórico" />
+    }
+    @if (history().error; as error) {
+      <app-problem-alert [error]="error" fallback="Não foi possível carregar o histórico." />
+    }
+    @if (history().data; as events) {
+      @if (events.length) {
+        <ol class="timeline" data-testid="history">
+          @for (event of events; track event.id) {
+            <li>
+              <time [attr.datetime]="event.occurredAt">
+                {{ event.occurredAt | date: 'dd/MM/yyyy HH:mm' }}
+              </time>
+              <div>
+                <strong>{{ historyLabels[event.action] }}</strong>
+                @if (event.stepLevel) {
+                  · {{ stepLevelLabels[event.stepLevel] }}
+                }
+                <span class="muted">
+                  por {{ userLabel(event.actorId) }} ({{ roleLabels[event.actorRole] }}) · v{{
+                    event.version
+                  }}
+                </span>
+                <div class="muted">
+                  @if (event.fromStatus) {
+                    {{ statusLabels[event.fromStatus] }} →
+                  }
+                  {{ statusLabels[event.toStatus] }}
+                </div>
+                @if (event.comment) {
+                  <q class="comment">{{ event.comment }}</q>
+                }
+              </div>
+            </li>
+          }
+        </ol>
+      } @else {
+        <p class="muted">Nenhum evento registrado.</p>
+      }
+    }
+  </section>
+}

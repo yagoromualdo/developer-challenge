@@ -48,8 +48,8 @@ export const routes: Routes = [
       {
         path: 'requests/:id',
         title: 'Solicitação',
-        loadComponent: placeholder,
-        data: { heading: 'Detalhe da solicitação' },
+        loadComponent: () =>
+          import('./features/requests/request-detail-page').then((m) => m.RequestDetailPage),
       },
       {
         path: 'approvals/inbox',
