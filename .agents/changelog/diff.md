@@ -901,3 +901,15 @@ One block per agent turn, one row per changed file:
 | `frontend/.dockerignore` | created | +9 | -0 |
 | `frontend/Dockerfile` | created | +23 | -0 |
 | `frontend/nginx.conf` | created | +34 | -0 |
+
+---
+### Turn 2026-11-16 20:07:51 -0300 · ClaudeCode
+- **Source**: hook
+- **Session**: 87ca72ec-112d-4932-8f08-5be2f5e15ec7
+- **Prompt**: Execute a etapa E33 do docs/plano-execucao.md. O job backend já existe no ci.yml; adicione os jobs frontend e compose-smoke.
+- **Summary**: n/a
+
+| File | Change | Additions | Removals |
+|---|---|---|---|
+| `.github/workflows/ci.yml` | modified | +97 | -0 |
+| `frontend/angular.json` | modified | +1 | -3 |
