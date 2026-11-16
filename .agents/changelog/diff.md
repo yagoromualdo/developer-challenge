@@ -709,3 +709,38 @@ One block per agent turn, one row per changed file:
 | `frontend/tsconfig.app.json` | created | +10 | -0 |
 | `frontend/tsconfig.json` | created | +31 | -0 |
 | `frontend/tsconfig.spec.json` | created | +9 | -0 |
+
+---
+### Turn 2026-11-16 08:05:40 -0300 · ClaudeCode
+- **Source**: command
+- **Session**: 34398ec7-114f-45d9-bd57-65a8b56f1b5b
+- **Prompt**: Execute a etapa E26 do docs/plano-execucao.md. O token fica em sessionStorage; o 401 leva ao login com returnUrl e volta para a rota de origem depois.
+- **Summary**: E26: add AuthService (sessionStorage), bearer/request-id/error interceptors with ApiError, auth/role/guest guards, login page with safe returnUrl, role-based shell menu and tests
+
+| File | Change | Additions | Removals |
+|---|---|---|---|
+| `frontend/src/app/app.config.ts` | modified | +14 | -2 |
+| `frontend/src/app/app.routes.spec.ts` | created | +171 | -0 |
+| `frontend/src/app/app.routes.ts` | modified | +50 | -1 |
+| `frontend/src/app/core/auth/auth.models.ts` | created | +38 | -0 |
+| `frontend/src/app/core/auth/auth.service.ts` | created | +96 | -0 |
+| `frontend/src/app/core/auth/auth.testing.ts` | created | +40 | -0 |
+| `frontend/src/app/core/auth/return-url.spec.ts` | created | +20 | -0 |
+| `frontend/src/app/core/auth/return-url.ts` | created | +13 | -0 |
+| `frontend/src/app/core/guards/auth.guard.ts` | created | +25 | -0 |
+| `frontend/src/app/core/guards/guest.guard.ts` | created | +12 | -0 |
+| `frontend/src/app/core/guards/role.guard.ts` | created | +23 | -0 |
+| `frontend/src/app/core/http/api-problem.ts` | created | +66 | -0 |
+| `frontend/src/app/core/http/api.ts` | created | +12 | -0 |
+| `frontend/src/app/core/http/auth.interceptor.ts` | created | +13 | -0 |
+| `frontend/src/app/core/http/error.interceptor.ts` | created | +60 | -0 |
+| `frontend/src/app/core/http/interceptors.spec.ts` | created | +123 | -0 |
+| `frontend/src/app/core/http/request-id.interceptor.ts` | created | +11 | -0 |
+| `frontend/src/app/core/http/uuid.ts` | created | +11 | -0 |
+| `frontend/src/app/core/layout/shell.html` | created | +27 | -0 |
+| `frontend/src/app/core/layout/shell.scss` | created | +38 | -0 |
+| `frontend/src/app/core/layout/shell.ts` | created | +46 | -0 |
+| `frontend/src/app/features/auth/login-page.html` | created | +54 | -0 |
+| `frontend/src/app/features/auth/login-page.scss` | created | +36 | -0 |
+| `frontend/src/app/features/auth/login-page.ts` | created | +81 | -0 |
+| `frontend/src/app/features/placeholder/placeholder-page.ts` | created | +14 | -0 |

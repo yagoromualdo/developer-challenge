@@ -1,0 +1,27 @@
+<mat-toolbar class="toolbar">
+  <a class="brand" routerLink="/dashboard">Solicitações de Compra</a>
+
+  <nav class="menu" aria-label="Menu principal">
+    @for (item of menu(); track item.path) {
+      <a
+        mat-button
+        [routerLink]="item.path"
+        routerLinkActive="active"
+        [routerLinkActiveOptions]="{ exact: true }"
+        ariaCurrentWhenActive="page"
+        >{{ item.label }}</a
+      >
+    }
+  </nav>
+
+  <span class="spacer"></span>
+
+  @if (user(); as current) {
+    <span class="user" data-testid="current-user">{{ current.name }} · {{ roleLabel() }}</span>
+  }
+  <button mat-stroked-button type="button" (click)="logout()">Sair</button>
+</mat-toolbar>
+
+<main class="content">
+  <router-outlet />
+</main>
