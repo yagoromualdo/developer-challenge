@@ -7,6 +7,8 @@ import { roleGuard } from './core/guards/role.guard';
 
 const placeholder = () =>
   import('./features/placeholder/placeholder-page').then((m) => m.PlaceholderPage);
+const requestForm = () =>
+  import('./features/requests/request-form-page').then((m) => m.RequestFormPage);
 
 export const routes: Routes = [
   {
@@ -36,8 +38,12 @@ export const routes: Routes = [
       {
         path: 'requests/new',
         title: 'Nova solicitação',
-        loadComponent: placeholder,
-        data: { heading: 'Nova solicitação' },
+        loadComponent: requestForm,
+      },
+      {
+        path: 'requests/:id/edit',
+        title: 'Editar solicitação',
+        loadComponent: requestForm,
       },
       {
         path: 'requests/:id',

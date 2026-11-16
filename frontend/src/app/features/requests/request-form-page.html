@@ -1,0 +1,217 @@
+<header class="page-header">
+  <h1>{{ editing ? 'Editar solicitação' : 'Nova solicitação' }}</h1>
+  <a mat-button [routerLink]="backLink()">Voltar</a>
+</header>
+
+@if (load().loading) {
+  <div class="loading" role="status">
+    <mat-progress-bar mode="indeterminate" aria-label="Carregando a solicitação" />
+    @if (!load().detail) {
+      <p>Carregando a solicitação…</p>
+    }
+  </div>
+}
+
+@if (load().error; as error) {
+  <app-problem-alert [error]="error" fallback="Não foi possível carregar a solicitação.">
+    <button mat-button type="button" class="retry" (click)="reloadDetail()">
+      Tentar novamente
+    </button>
+  </app-problem-alert>
+}
+
+@if (editing && load().detail && !canEdit()) {
+  <div class="info" role="status" data-testid="not-editable">
+    <p>Esta solicitação não pode ser editada no momento.</p>
+    <a mat-stroked-button [routerLink]="backLink()">Ver solicitação</a>
+  </div>
+}
+
+@if ((!editing || load().detail) && canEdit()) {
+  <form
+    class="request-form"
+    [formGroup]="form"
+    (ngSubmit)="submit()"
+    novalidate
+    aria-label="Dados da solicitação"
+  >
+    <mat-form-field class="wide">
+      <mat-label>Título</mat-label>
+      <input matInput formControlName="title" name="title" [maxlength]="limits.titleMaxLength" />
+      @if (errorOf(form.controls.title); as message) {
+        <mat-error>{{ message }}</mat-error>
+      }
+    </mat-form-field>
+
+    <mat-form-field class="wide">
+      <mat-label>Descrição</mat-label>
+      <textarea
+        matInput
+        formControlName="description"
+        name="description"
+        rows="3"
+        [maxlength]="limits.descriptionMaxLength"
+      ></textarea>
+      @if (errorOf(form.controls.description); as message) {
+        <mat-error>{{ message }}</mat-error>
+      }
+    </mat-form-field>
+
+    <div class="row">
+      <mat-form-field>
+        <mat-label>Categoria</mat-label>
+        <mat-select formControlName="category" data-testid="category">
+          @for (option of categoryOptions; track option.value) {
+            <mat-option [value]="option.value">{{ option.label }}</mat-option>
+          }
+        </mat-select>
+        @if (errorOf(form.controls.category); as message) {
+          <mat-error>{{ message }}</mat-error>
+        }
+      </mat-form-field>
+
+      @if (editing) {
+        <mat-form-field>
+          <mat-label>Centro de custo</mat-label>
+          <input matInput [value]="costCenterLabel()" readonly name="costCenterLabel" />
+          <mat-hint>Não muda depois da criação.</mat-hint>
+        </mat-form-field>
+      } @else {
+        <mat-form-field>
+          <mat-label>Centro de custo</mat-label>
+          <mat-select formControlName="costCenterId" data-testid="cost-center">
+            <mat-option [value]="null">Padrão do meu usuário</mat-option>
+            @for (costCenter of costCenters(); track costCenter.id) {
+              <mat-option [value]="costCenter.id"
+                >{{ costCenter.code }} · {{ costCenter.name }}</mat-option
+              >
+            }
+          </mat-select>
+          @if (errorOf(form.controls.costCenterId); as message) {
+            <mat-error>{{ message }}</mat-error>
+          }
+          @if (costCentersFailed()) {
+            <mat-hint>Não foi possível carregar os centros de custo.</mat-hint>
+          }
+        </mat-form-field>
+      }
+
+      <mat-form-field>
+        <mat-label>Necessário até</mat-label>
+        <input matInput type="date" formControlName="neededBy" name="neededBy" />
+        @if (errorOf(form.controls.neededBy); as message) {
+          <mat-error>{{ message }}</mat-error>
+        }
+      </mat-form-field>
+    </div>
+
+    <section class="items" formArrayName="items" aria-labelledby="items-heading">
+      <h2 id="items-heading">Itens</h2>
+
+      @for (item of itemControls(); track item; let i = $index) {
+        <div class="item" [formGroupName]="i" [attr.data-item-index]="i">
+          <mat-form-field class="item-description">
+            <mat-label>Descrição do item {{ i + 1 }}</mat-label>
+            <input
+              matInput
+              formControlName="description"
+              [maxlength]="limits.itemDescriptionMaxLength"
+            />
+            @if (errorOf(item.controls.description); as message) {
+              <mat-error>{{ message }}</mat-error>
+            }
+          </mat-form-field>
+
+          <mat-form-field class="item-quantity">
+            <mat-label>Quantidade</mat-label>
+            <input
+              matInput
+              type="number"
+              formControlName="quantity"
+              min="1"
+              [max]="limits.maxItemQuantity"
+              step="1"
+            />
+            @if (errorOf(item.controls.quantity); as message) {
+              <mat-error>{{ message }}</mat-error>
+            }
+          </mat-form-field>
+
+          <mat-form-field class="item-price">
+            <mat-label>Preço unitário (R$)</mat-label>
+            <input matInput formControlName="unitPrice" inputmode="decimal" placeholder="0,00" />
+            @if (errorOf(item.controls.unitPrice); as message) {
+              <mat-error>{{ message }}</mat-error>
+            }
+          </mat-form-field>
+
+          <p class="item-subtotal" data-testid="item-subtotal">
+            {{ subtotals()[i] ? (subtotals()[i] | money) : '—' }}
+          </p>
+
+          <button
+            mat-button
+            type="button"
+            class="remove"
+            (click)="removeItem(i)"
+            [disabled]="items.length === 1"
+            [attr.aria-label]="'Remover o item ' + (i + 1)"
+          >
+            Remover
+          </button>
+        </div>
+      }
+
+      @if (errorOf(items); as message) {
+        @if (items.touched) {
+          <p class="items-error" role="alert">{{ message }}</p>
+        }
+      }
+
+      <button
+        mat-stroked-button
+        type="button"
+        (click)="addItem()"
+        [disabled]="items.length >= limits.maxItems"
+      >
+        Adicionar item
+      </button>
+    </section>
+
+    <p class="total" aria-live="polite">
+      Total estimado: <strong data-testid="total">{{ total() | money }}</strong>
+      <span class="total-hint">O valor final é calculado pelo servidor.</span>
+    </p>
+
+    <div class="feedback">
+      @if (notice(); as message) {
+        <div class="info" role="alert" data-testid="notice">
+          <p>{{ message }}</p>
+        </div>
+      }
+
+      @if (invalidFields()) {
+        <div class="field-summary" role="alert">
+          <p>Corrija os campos destacados.</p>
+          @if (unmappedErrors().length) {
+            <ul>
+              @for (fieldError of unmappedErrors(); track $index) {
+                <li>{{ fieldError.field }}: {{ fieldError.message }}</li>
+              }
+            </ul>
+          }
+        </div>
+      }
+
+      @if (submitError(); as error) {
+        <app-problem-alert [error]="error" fallback="Não foi possível salvar a solicitação." />
+      }
+    </div>
+
+    <div class="actions">
+      <button mat-flat-button type="submit" [disabled]="submitting()">
+        {{ submitting() ? 'Salvando…' : editing ? 'Salvar alterações' : 'Criar rascunho' }}
+      </button>
+    </div>
+  </form>
+}

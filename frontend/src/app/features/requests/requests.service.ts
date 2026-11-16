@@ -4,7 +4,15 @@ import { Observable } from 'rxjs';
 import { API_BASE_URL } from '../../core/http/api';
 import { Page } from '../../core/http/page';
 import { RequestListQuery, toHttpParams } from './request-list-query';
-import { CostCenter, PurchaseRequestSummary } from './requests.models';
+import {
+  CostCenter,
+  CreateRequestPayload,
+  PurchaseRequestDetail,
+  PurchaseRequestSummary,
+  UpdateRequestPayload,
+} from './requests.models';
+
+export const IDEMPOTENCY_KEY_HEADER = 'Idempotency-Key';
 
 @Injectable({ providedIn: 'root' })
 export class RequestsService {
@@ -15,6 +23,21 @@ export class RequestsService {
     return this.http.get<Page<PurchaseRequestSummary>>(`${API_BASE_URL}/requests`, {
       params: toHttpParams(query),
     });
+  }
+
+  get(id: number): Observable<PurchaseRequestDetail> {
+    return this.http.get<PurchaseRequestDetail>(`${API_BASE_URL}/requests/${id}`);
+  }
+
+  /** Repetir a mesma `idempotencyKey` com o mesmo corpo devolve a solicitação já criada, sem duplicar. */
+  create(payload: CreateRequestPayload, idempotencyKey: string): Observable<PurchaseRequestDetail> {
+    return this.http.post<PurchaseRequestDetail>(`${API_BASE_URL}/requests`, payload, {
+      headers: { [IDEMPOTENCY_KEY_HEADER]: idempotencyKey },
+    });
+  }
+
+  update(id: number, payload: UpdateRequestPayload): Observable<PurchaseRequestDetail> {
+    return this.http.put<PurchaseRequestDetail>(`${API_BASE_URL}/requests/${id}`, payload);
   }
 
   costCenters(): Observable<CostCenter[]> {

@@ -792,3 +792,22 @@ One block per agent turn, one row per changed file:
 | `frontend/src/app/shared/components/paginator-intl.ts` | created | +20 | -0 |
 | `frontend/src/app/shared/components/status-badge.ts` | created | +40 | -0 |
 | `frontend/src/app/shared/request-category.ts` | created | +20 | -0 |
+
+---
+### Turn 2026-11-16 13:11:45 -0300 · ClaudeCode
+- **Source**: command
+- **Session**: d4499c95-ed93-4070-955c-81a0eaaf6916
+- **Prompt**: Execute a etapa E29 do docs/plano-execucao.md. Gere um Idempotency-Key por instância do formulário de criação e mapeie os errors[] do 400 para os campos, incluindo os itens do FormArray.
+- **Summary**: E29: add request create/edit form with FormArray items, live display total, per-instance Idempotency-Key and 400 errors mapped to fields
+
+| File | Change | Additions | Removals |
+|---|---|---|---|
+| `frontend/src/app/app.routes.ts` | modified | +8 | -2 |
+| `frontend/src/app/features/placeholder/placeholder-page.ts` | modified | +1 | -1 |
+| `frontend/src/app/features/requests/request-form-page.html` | created | +217 | -0 |
+| `frontend/src/app/features/requests/request-form-page.scss` | created | +141 | -0 |
+| `frontend/src/app/features/requests/request-form-page.spec.ts` | created | +360 | -0 |
+| `frontend/src/app/features/requests/request-form-page.ts` | created | +238 | -0 |
+| `frontend/src/app/features/requests/request-form.ts` | created | +223 | -0 |
+| `frontend/src/app/features/requests/requests.models.ts` | modified | +55 | -0 |
+| `frontend/src/app/features/requests/requests.service.ts` | modified | +24 | -1 |
