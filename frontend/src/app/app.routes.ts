@@ -30,14 +30,20 @@ export const routes: Routes = [
       {
         path: 'requests',
         title: 'Solicitações',
-        loadComponent: placeholder,
-        data: { heading: 'Solicitações' },
+        loadComponent: () =>
+          import('./features/requests/request-list-page').then((m) => m.RequestListPage),
       },
       {
         path: 'requests/new',
         title: 'Nova solicitação',
         loadComponent: placeholder,
         data: { heading: 'Nova solicitação' },
+      },
+      {
+        path: 'requests/:id',
+        title: 'Solicitação',
+        loadComponent: placeholder,
+        data: { heading: 'Detalhe da solicitação' },
       },
       {
         path: 'approvals/inbox',

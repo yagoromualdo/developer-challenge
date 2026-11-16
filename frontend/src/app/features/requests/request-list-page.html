@@ -1,0 +1,187 @@
+<header class="page-header">
+  <h1>Solicitações</h1>
+  <div class="header-actions">
+    <button mat-stroked-button type="button" (click)="reload()" [disabled]="state().loading">
+      Atualizar
+    </button>
+    <a mat-flat-button routerLink="/requests/new">Nova solicitação</a>
+  </div>
+</header>
+
+<form
+  class="filters"
+  [formGroup]="filters"
+  (ngSubmit)="applyFilters()"
+  aria-label="Filtros da listagem"
+>
+  <mat-form-field>
+    <mat-label>Status</mat-label>
+    <mat-select formControlName="status" multiple data-testid="filter-status">
+      @for (option of statusOptions; track option.value) {
+        <mat-option [value]="option.value">{{ option.label }}</mat-option>
+      }
+    </mat-select>
+  </mat-form-field>
+
+  <mat-form-field>
+    <mat-label>Categoria</mat-label>
+    <mat-select formControlName="category" multiple data-testid="filter-category">
+      @for (option of categoryOptions; track option.value) {
+        <mat-option [value]="option.value">{{ option.label }}</mat-option>
+      }
+    </mat-select>
+  </mat-form-field>
+
+  <mat-form-field>
+    <mat-label>Centro de custo</mat-label>
+    <mat-select formControlName="costCenterId" data-testid="filter-cost-center">
+      <mat-option [value]="null">Todos</mat-option>
+      @for (costCenter of costCenters(); track costCenter.id) {
+        <mat-option [value]="costCenter.id"
+          >{{ costCenter.code }} · {{ costCenter.name }}</mat-option
+        >
+      }
+    </mat-select>
+    @if (costCentersFailed()) {
+      <mat-hint>Não foi possível carregar os centros de custo.</mat-hint>
+    }
+  </mat-form-field>
+
+  <mat-form-field>
+    <mat-label>Criada de</mat-label>
+    <input matInput type="date" formControlName="createdFrom" name="createdFrom" />
+  </mat-form-field>
+
+  <mat-form-field>
+    <mat-label>Criada até</mat-label>
+    <input
+      matInput
+      type="date"
+      formControlName="createdTo"
+      name="createdTo"
+      [errorStateMatcher]="createdRangeMatcher"
+    />
+    @if (filters.hasError('createdRange')) {
+      <mat-error>Deve ser igual ou posterior à data inicial.</mat-error>
+    }
+  </mat-form-field>
+
+  <div class="filter-actions">
+    <button mat-flat-button type="submit">Filtrar</button>
+    <button mat-button type="button" (click)="clearFilters()" [disabled]="!filtered()">
+      Limpar filtros
+    </button>
+  </div>
+</form>
+
+@if (state().loading) {
+  <div class="loading" role="status">
+    <mat-progress-bar mode="indeterminate" aria-label="Carregando as solicitações" />
+    @if (!state().result) {
+      <p>Carregando as solicitações…</p>
+    }
+  </div>
+}
+
+@if (state().error; as error) {
+  <app-problem-alert [error]="error" fallback="Não foi possível carregar as solicitações.">
+    @if (fieldErrors().length) {
+      <ul class="field-errors">
+        @for (fieldError of fieldErrors(); track fieldError.field) {
+          <li>{{ fieldError.field }}: {{ fieldError.message }}</li>
+        }
+      </ul>
+    }
+    <button mat-button type="button" class="retry" (click)="reload()">Tentar novamente</button>
+  </app-problem-alert>
+}
+
+@if (state().result) {
+  @if (rows().length) {
+    <div class="table-wrapper" [class.stale]="state().loading">
+      <table
+        mat-table
+        [dataSource]="rows()"
+        matSort
+        matSortDisableClear
+        [matSortActive]="query().sortField"
+        [matSortDirection]="query().sortDirection"
+        (matSortChange)="changeSort($event)"
+      >
+        <ng-container matColumnDef="title">
+          <th mat-header-cell *matHeaderCellDef mat-sort-header>Título</th>
+          <td mat-cell *matCellDef="let row">
+            <a [routerLink]="['/requests', row.id]">{{ row.title }}</a>
+          </td>
+        </ng-container>
+
+        <ng-container matColumnDef="status">
+          <th mat-header-cell *matHeaderCellDef mat-sort-header>Status</th>
+          <td mat-cell *matCellDef="let row"><app-status-badge [status]="row.status" /></td>
+        </ng-container>
+
+        <ng-container matColumnDef="category">
+          <th mat-header-cell *matHeaderCellDef>Categoria</th>
+          <td mat-cell *matCellDef="let row">{{ row.categoryLabel }}</td>
+        </ng-container>
+
+        <ng-container matColumnDef="costCenter">
+          <th mat-header-cell *matHeaderCellDef>Centro de custo</th>
+          <td mat-cell *matCellDef="let row">{{ row.costCenterLabel }}</td>
+        </ng-container>
+
+        <ng-container matColumnDef="total">
+          <th
+            mat-header-cell
+            *matHeaderCellDef
+            mat-sort-header
+            arrowPosition="before"
+            class="numeric"
+          >
+            Total
+          </th>
+          <td mat-cell *matCellDef="let row" class="numeric">{{ row.total | money }}</td>
+        </ng-container>
+
+        <ng-container matColumnDef="createdAt">
+          <th mat-header-cell *matHeaderCellDef mat-sort-header>Criada em</th>
+          <td mat-cell *matCellDef="let row">{{ row.createdAt | date: 'dd/MM/yyyy HH:mm' }}</td>
+        </ng-container>
+
+        <ng-container matColumnDef="updatedAt">
+          <th mat-header-cell *matHeaderCellDef mat-sort-header>Atualizada em</th>
+          <td mat-cell *matCellDef="let row">{{ row.updatedAt | date: 'dd/MM/yyyy HH:mm' }}</td>
+        </ng-container>
+
+        <tr mat-header-row *matHeaderRowDef="columns"></tr>
+        <tr mat-row *matRowDef="let row; columns: columns" [attr.data-request-id]="row.id"></tr>
+      </table>
+    </div>
+  } @else {
+    <div class="empty" data-testid="list-empty">
+      @if (beyondLastPage()) {
+        <p>Esta página não existe mais.</p>
+        <button mat-stroked-button type="button" (click)="goToFirstPage()">
+          Ir para a primeira página
+        </button>
+      } @else if (filtered()) {
+        <p>Nenhuma solicitação encontrada com esses filtros.</p>
+        <button mat-stroked-button type="button" (click)="clearFilters()">Limpar filtros</button>
+      } @else {
+        <p>Nenhuma solicitação encontrada.</p>
+        <a mat-flat-button routerLink="/requests/new">Nova solicitação</a>
+      }
+    </div>
+  }
+
+  <mat-paginator
+    [length]="totalElements()"
+    [pageIndex]="query().page"
+    [pageSize]="query().size"
+    [pageSizeOptions]="pageSizeOptions"
+    [disabled]="state().loading"
+    showFirstLastButtons
+    aria-label="Paginação das solicitações"
+    (page)="changePage($event)"
+  />
+}

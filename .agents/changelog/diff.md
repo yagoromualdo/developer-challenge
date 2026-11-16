@@ -744,3 +744,51 @@ One block per agent turn, one row per changed file:
 | `frontend/src/app/features/auth/login-page.scss` | created | +36 | -0 |
 | `frontend/src/app/features/auth/login-page.ts` | created | +81 | -0 |
 | `frontend/src/app/features/placeholder/placeholder-page.ts` | created | +14 | -0 |
+
+---
+### Turn 2026-11-16 12:43:24 -0300 · ClaudeCode
+- **Source**: command
+- **Session**: 491c477a-6dce-4a06-aabb-9020caff9917
+- **Prompt**: Execute a etapa E27 do docs/plano-execucao.md.
+- **Summary**: Add frontend dashboard (status totals, monthly budget per cost center, loading/empty/error states) with money pipe, problem alert and tests
+
+| File | Change | Additions | Removals |
+|---|---|---|---|
+| `frontend/src/app/app.routes.spec.ts` | modified | +5 | -1 |
+| `frontend/src/app/app.routes.ts` | modified | +2 | -2 |
+| `frontend/src/app/features/dashboard/dashboard-page.html` | created | +110 | -0 |
+| `frontend/src/app/features/dashboard/dashboard-page.scss` | created | +120 | -0 |
+| `frontend/src/app/features/dashboard/dashboard-page.spec.ts` | created | +167 | -0 |
+| `frontend/src/app/features/dashboard/dashboard-page.ts` | created | +119 | -0 |
+| `frontend/src/app/features/dashboard/dashboard.models.ts` | created | +19 | -0 |
+| `frontend/src/app/features/dashboard/dashboard.service.ts` | created | +14 | -0 |
+| `frontend/src/app/features/placeholder/placeholder-page.ts` | modified | +1 | -1 |
+| `frontend/src/app/shared/components/money.pipe.spec.ts` | created | +14 | -0 |
+| `frontend/src/app/shared/components/money.pipe.ts` | created | +19 | -0 |
+| `frontend/src/app/shared/components/problem-alert.ts` | created | +53 | -0 |
+| `frontend/src/app/shared/request-status.ts` | created | +21 | -0 |
+
+---
+### Turn 2026-11-16 12:58:26 -0300 · ClaudeCode
+- **Source**: command
+- **Session**: 8d449663-9484-45fa-95c3-d1c78e9ce6e7
+- **Prompt**: Execute a etapa E28 do docs/plano-execucao.md. A URL é a fonte da verdade: filtros, ordenação e paginação em query params, buscando sempre no servidor.
+- **Summary**: E28: add request list page with server-side filters, sorting and pagination driven by URL query params
+
+| File | Change | Additions | Removals |
+|---|---|---|---|
+| `frontend/src/app/app.config.ts` | modified | +2 | -0 |
+| `frontend/src/app/app.routes.spec.ts` | modified | +3 | -1 |
+| `frontend/src/app/app.routes.ts` | modified | +8 | -2 |
+| `frontend/src/app/core/http/page.ts` | created | +8 | -0 |
+| `frontend/src/app/core/locale.ts` | created | +11 | -0 |
+| `frontend/src/app/features/requests/request-list-page.html` | created | +187 | -0 |
+| `frontend/src/app/features/requests/request-list-page.scss` | created | +85 | -0 |
+| `frontend/src/app/features/requests/request-list-page.spec.ts` | created | +249 | -0 |
+| `frontend/src/app/features/requests/request-list-page.ts` | created | +263 | -0 |
+| `frontend/src/app/features/requests/request-list-query.ts` | created | +148 | -0 |
+| `frontend/src/app/features/requests/requests.models.ts` | created | +25 | -0 |
+| `frontend/src/app/features/requests/requests.service.ts` | created | +23 | -0 |
+| `frontend/src/app/shared/components/paginator-intl.ts` | created | +20 | -0 |
+| `frontend/src/app/shared/components/status-badge.ts` | created | +40 | -0 |
+| `frontend/src/app/shared/request-category.ts` | created | +20 | -0 |

@@ -40,9 +40,11 @@ describe('routes, session and role menu', () => {
     harness = await RouterTestingHarness.create();
   }
 
-  // Estes testes só olham navegação; a carga do dashboard (rota padrão) tem spec própria.
+  // Estes testes só olham navegação; as cargas do dashboard e da listagem têm specs próprias.
   afterEach(() => {
     httpTesting.match('/api/dashboard/summary');
+    httpTesting.match((req) => req.url === '/api/requests');
+    httpTesting.match('/api/cost-centers');
     httpTesting.verify();
   });
 
