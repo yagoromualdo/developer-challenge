@@ -673,3 +673,39 @@ One block per agent turn, one row per changed file:
 | File | Change | Additions | Removals |
 |---|---|---|---|
 | `.github/workflows/ci.yml` | created | +35 | -0 |
+
+---
+### Turn 2026-11-16 00:30:53 -0300 · ClaudeCode
+- **Source**: command
+- **Session**: adf0ff63-a683-48d6-88c2-43586a068f70
+- **Prompt**: Node atualizado
+- **Summary**: E25: scaffold Angular 22 frontend (routing, SCSS, zoneless, Vitest) with Material, angular-eslint, Prettier scripts and dev proxy
+
+| File | Change | Additions | Removals |
+|---|---|---|---|
+| `frontend/.editorconfig` | created | +17 | -0 |
+| `frontend/.gitignore` | created | +44 | -0 |
+| `frontend/.prettierignore` | created | +6 | -0 |
+| `frontend/.prettierrc` | created | +12 | -0 |
+| `frontend/.vscode/extensions.json` | created | +4 | -0 |
+| `frontend/.vscode/launch.json` | created | +20 | -0 |
+| `frontend/.vscode/tasks.json` | created | +42 | -0 |
+| `frontend/README.md` | created | +59 | -0 |
+| `frontend/angular.json` | created | +86 | -0 |
+| `frontend/eslint.config.js` | created | +41 | -0 |
+| `frontend/package-lock.json` | created | +9329 | -0 |
+| `frontend/package.json` | created | +42 | -0 |
+| `frontend/proxy.conf.json` | created | +8 | -0 |
+| `frontend/public/favicon.ico` | created (binary) | n/a | n/a |
+| `frontend/src/app/app.config.ts` | created | +7 | -0 |
+| `frontend/src/app/app.html` | created | +1 | -0 |
+| `frontend/src/app/app.routes.ts` | created | +3 | -0 |
+| `frontend/src/app/app.scss` | created | +0 | -0 |
+| `frontend/src/app/app.spec.ts` | created | +19 | -0 |
+| `frontend/src/app/app.ts` | created | +11 | -0 |
+| `frontend/src/index.html` | created | +23 | -0 |
+| `frontend/src/main.ts` | created | +5 | -0 |
+| `frontend/src/styles.scss` | created | +39 | -0 |
+| `frontend/tsconfig.app.json` | created | +10 | -0 |
+| `frontend/tsconfig.json` | created | +31 | -0 |
+| `frontend/tsconfig.spec.json` | created | +9 | -0 |
