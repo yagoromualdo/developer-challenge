@@ -30,7 +30,8 @@ class RequestActionGuard {
      */
     // Mesma mensagem para inexistente e fora da visibilidade: o 404 não revela que a solicitação existe (ADR 003).
     PurchaseRequestEntity findVisible(Actor actor, Long requestId) {
-        // Snapshot coerente num único SELECT; o findOne abaixo devolve a mesma instância gerenciada, sem reler o estado.
+        // Snapshot coerente num único SELECT; o findOne abaixo devolve a mesma instância
+        // gerenciada, sem reler o estado.
         requests.findCurrentVersionWithSteps(requestId);
         return requests.findOne(RequestVisibility.withId(requestId).and(RequestVisibility.visibleTo(actor)))
                 .orElseThrow(() -> new ResourceNotFoundException("Solicitação " + requestId + " não encontrada."));
