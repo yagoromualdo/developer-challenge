@@ -26,11 +26,11 @@ class RequestActionGuard {
 
     /**
      * Precisa ser a primeira leitura da solicitação na transação: se ela já estiver no contexto de persistência, o
-     * Hibernate devolve a instância em cache e a foto pode voltar a misturar commits diferentes (ADR 001).
+     * Hibernate devolve a instância em cache e a snapshot pode voltar a misturar commits diferentes (ADR 001).
      */
     // Mesma mensagem para inexistente e fora da visibilidade: o 404 não revela que a solicitação existe (ADR 003).
     PurchaseRequestEntity findVisible(Actor actor, Long requestId) {
-        // Foto coerente num único SELECT; o findOne abaixo devolve a mesma instância gerenciada, sem reler o estado.
+        // Snapshot coerente num único SELECT; o findOne abaixo devolve a mesma instância gerenciada, sem reler o estado.
         requests.findCurrentVersionWithSteps(requestId);
         return requests.findOne(RequestVisibility.withId(requestId).and(RequestVisibility.visibleTo(actor)))
                 .orElseThrow(() -> new ResourceNotFoundException("Solicitação " + requestId + " não encontrada."));

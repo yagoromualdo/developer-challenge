@@ -32,7 +32,7 @@ public interface PurchaseRequestRepository
             """)
     Optional<RequestVersionEntity> findCurrentVersionWithSteps(Long requestId);
 
-    /** A mesma foto coerente de {@link #findCurrentVersionWithSteps}, para várias solicitações de uma vez. */
+    /** A mesma snapshot coerente de {@link #findCurrentVersionWithSteps}, para várias solicitações de uma vez. */
     @Query("""
             select v from RequestVersionEntity v
             join fetch v.request r

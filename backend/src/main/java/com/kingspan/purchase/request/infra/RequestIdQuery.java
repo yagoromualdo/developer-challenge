@@ -7,7 +7,7 @@ import org.springframework.data.jpa.domain.Specification;
 public interface RequestIdQuery {
 
     /**
-     * Não põe solicitações no contexto de persistência: uma leitura seguinte com {@code join fetch} monta a foto
+     * Não põe solicitações no contexto de persistência: uma leitura seguinte com {@code join fetch} monta a snapshot
      * coerente em vez de reaproveitar instâncias lidas antes (ADR 001).
      */
     List<Long> findIds(Specification<PurchaseRequestEntity> spec);
