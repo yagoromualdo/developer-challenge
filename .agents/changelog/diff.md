@@ -936,3 +936,82 @@ One block per agent turn, one row per changed file:
 |---|---|---|---|
 | `backend/src/main/java/com/kingspan/purchase/request/infra/RequestStatusCountQueryImpl.java` | modified | +1 | -1 |
 | `backend/src/test/java/com/kingspan/purchase/request/web/PurchaseRequestSubmitCancelIntegrationTest.java` | modified | +4 | -7 |
+
+---
+### Turn 2026-11-16 21:02:17 -0300 · ClaudeCode
+- **Source**: command
+- **Session**: 20d89cce-1a11-49da-9df7-ab8d290c65d7
+- **Prompt**: <pasted_content id="151d"> Execute a etapa E34 do docs/plano-execucao.md. Gere rascunhos dos ADRs 001 a 007 no formato contexto, opções consideradas, decisão e consequências, baseados nas decisões registradas no plano e no que foi de fato implementado (consulte o código e o histórico de commits). Inclua obrigatoriamente: - ADR 001 (concorrência): o bug encontrado pelo teste de concorrência da E19 (leituras separadas em READ COMMITTED gerando snapshot incoerente e 500) e a correção com
+- **Summary**: Draft ADRs 001-007 (concurrency, versions/history, 403x404, domain architecture, money/dates, idempotency, stateless auth)
+
+| File | Change | Additions | Removals |
+|---|---|---|---|
+| `docs/adr/001-concorrencia-e-orcamento.md` | created | +63 | -0 |
+| `docs/adr/002-versoes-e-historico.md` | created | +59 | -0 |
+| `docs/adr/003-visibilidade-404-e-ordem-de-verificacao.md` | modified | +41 | -5 |
+| `docs/adr/004-arquitetura-do-dominio.md` | created | +50 | -0 |
+| `docs/adr/005-dinheiro-e-datas.md` | created | +44 | -0 |
+| `docs/adr/006-idempotencia.md` | created | +37 | -0 |
+| `docs/adr/007-autenticacao-stateless.md` | created | +49 | -0 |
+
+---
+### Turn 2026-11-16 22:15:58 -0300 · ClaudeCode
+- **Source**: command
+- **Session**: b2acac31-9452-485b-93aa-a32727d4c251
+- **Prompt**: <pasted_content id="427b"> Execute a etapa E35 do docs/plano-execucao.md. Gere os rascunhos de: - SOLUTION.md: visão geral, como rodar (docker compose e local), portas, usuários do seed com credenciais fictícias, principais decisões e trade-offs (com link para os ADRs), diferenciais implementados, o que ficou de fora e o que faria com mais tempo. - backend/README.md: pré-requisitos (Java 21, Docker), variáveis de ambiente, comandos de build/teste/execução (incluindo TestPurchaseApplicati
+- **Summary**: E35: draft SOLUTION.md, backend/frontend READMEs and docs/architecture.md with Mermaid diagrams
+
+| File | Change | Additions | Removals |
+|---|---|---|---|
+| `SOLUTION.md` | created | +193 | -0 |
+| `backend/README.md` | created | +165 | -0 |
+| `docs/architecture.md` | created | +157 | -0 |
+| `frontend/README.md` | modified | +55 | -32 |
+
+---
+### Turn 2026-11-17 15:15:38 -0300 · ClaudeCode
+- **Source**: command
+- **Session**: b2acac31-9452-485b-93aa-a32727d4c251
+- **Prompt**: esse coomando que vc colocou no readme.md do back nao roda no cmd.... ```bash SEED_ENABLED=true ./mvnw spring-boot:test-run ```
+- **Summary**: Add cmd and PowerShell variants of the SEED_ENABLED run commands in backend/README.md and SOLUTION.md
+
+| File | Change | Additions | Removals |
+|---|---|---|---|
+| `SOLUTION.md` | modified | +2 | -2 |
+| `backend/README.md` | modified | +31 | -2 |
+
+---
+### Turn 2026-11-17 15:17:06 -0300 · ClaudeCode
+- **Source**: command
+- **Session**: b2acac31-9452-485b-93aa-a32727d4c251
+- **Prompt**: Sim, corrija
+- **Summary**: Add cmd and PowerShell variants of the backend run command in frontend/README.md
+
+| File | Change | Additions | Removals |
+|---|---|---|---|
+| `frontend/README.md` | modified | +11 | -0 |
+
+---
+### Turn 2026-11-17 15:35:08 -0300 · ClaudeCode
+- **Source**: command
+- **Session**: b2acac31-9452-485b-93aa-a32727d4c251
+- **Prompt**: Nos comandos de terminal do SOLUTION.md e dos READMEs, mova os comentários inline (# ...) para uma linha separada acima do bloco de código, porque o cmd do Windows não aceita # no fim da linha. Deixe explícito em qual pasta cada comando deve ser executado (raiz ou backend/).
+- **Summary**: Move inline comments out of command code blocks and state the working folder for each command in SOLUTION.md and READMEs
+
+| File | Change | Additions | Removals |
+|---|---|---|---|
+| `SOLUTION.md` | modified | +21 | -7 |
+| `backend/README.md` | modified | +23 | -16 |
+| `frontend/README.md` | modified | +22 | -9 |
+
+---
+### Turn 2026-11-17 21:46:37 -0300 · ClaudeCode
+- **Source**: command
+- **Session**: 20d89cce-1a11-49da-9df7-ab8d290c65d7
+- **Prompt**: Só corrija os ADRs
+- **Summary**: Fix ADRs 002 and 005: missing month-boundary resubmission test is a test gap, not a Clock limitation
+
+| File | Change | Additions | Removals |
+|---|---|---|---|
+| `docs/adr/002-versoes-e-historico.md` | modified | +1 | -1 |
+| `docs/adr/005-dinheiro-e-datas.md` | modified | +1 | -1 |
